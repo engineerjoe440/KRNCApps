@@ -3,13 +3,19 @@ from PIL import Image, ImageTk
 import time
 
 class Splash(tk.Toplevel):
-    def __init__(self, parent):
+    def __init__(self,parent,fg='white',bg='#506c91',imgw=150,imgh=150,
+                 width=200,height=200,image=None,text=''):
         tk.Toplevel.__init__(self, parent)
         self.center()
-        self.configure(background='#506c91')
+        self.geometry("{}x{}".format(width,height))
+        self.configure(background=bg)
         self.overrideredirect(1)
-        self.showImg()
-        self.showTxt()
+        if image != None:
+            self.showImg(image=image,bg=bg,w=imgw,h=imgh)
+        else:
+            imgh = 0
+        if text != '':
+            self.showTxt(text=text,fg=fg,bg=bg,imgh=imgh)
         self.update()
     
     def center(self):
@@ -24,28 +30,36 @@ class Splash(tk.Toplevel):
         y = self.winfo_screenheight() // 2 - self_height // 2
         self.geometry('{}x{}+{}+{}'.format(width, height, x, y))
         self.deiconify()
-    def showImg(self):
-        render = Image.open("C:\\Users\\joestan\Desktop\\KRNCApps\\common\\KRNCnegative.png")
-        render = render.resize((150,150), Image.ANTIALIAS)
+    def showImg(self,image,bg,w,h):
+        render = Image.open(image)
+        render = render.resize((w,h), Image.ANTIALIAS)
         photoImg =  ImageTk.PhotoImage(render)
-        img = tk.Label(self, image=photoImg, bg='#506c91')
+        imgFrame = tk.Frame(self, bg=bg)
+        imgFrame.grid(row=0, column=1)
+        img = tk.Label(imgFrame, image=photoImg, bg=bg)
         img.image = photoImg
         img.place(x=22, y=0)
-    def showTxt(self):
-        txtFrame = tk.Frame(self, bg='#506c91')
-        txtFrame.grid(row=0, column=1)
-        label1 = tk.Label(txtFrame, text="Welcome Home", fg="white", bg='#506c91')
-        label1.grid(row=0, column=0, pady=10)
+        img.grid(row=0, column=0, pady=0)
+        imgFrame.update()
+        xbias = self.winfo_width() / 2 - imgFrame.winfo_width() / 2
+        ybias = 5
+        imgFrame.grid(row=0, column=1, pady=ybias, padx=xbias)
+    def showTxt(self,text,fg,bg,imgh=0):
+        txtFrame = tk.Frame(self, bg=bg)
+        txtFrame.grid(row=1, column=1)
+        label1 = tk.Label(txtFrame, text=text, fg=fg, bg=bg)
+        label1.grid(row=1, column=0, pady=0)
         txtFrame.update()
         xbias = self.winfo_width() / 2 - txtFrame.winfo_width() / 2
-        ybias = (self.winfo_height() / 2- txtFrame.winfo_height() / 2) + 60
-        txtFrame.grid(row=0, column=1, pady=ybias, padx=xbias)
+        ybias = self.winfo_height() - (txtFrame.winfo_height() + 25 + imgh)
+        txtFrame.grid(row=1, column=1, pady=ybias, padx=xbias)
 
 class App(tk.Tk):
     def __init__(self):
         tk.Tk.__init__(self)
         self.withdraw()
-        splash = Splash(self)
+        splash = Splash(self,text="Welcome Home",width=300,
+            image="C:\\Users\\joestan\Desktop\\KRNCApps\\common\\KRNCnegative.png")
 
         ## setup stuff goes here
         self.title("Main Window")
