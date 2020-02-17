@@ -1,11 +1,51 @@
+"""
+#######################################################################################
+Tkinter Routines Support File
+(c) Stanley Solutions
+
+By: Joe Stanley
+#######################################################################################
+"""
+
+# Required Imports
 import tkinter as tk
 from PIL import Image, ImageTk
 import time, os, sys
 
-# Define Relative Parent Path Extractor
+# Define Generic Parent-Directory File Retrieval System; EX: `uppath(__file__, 2)`
 uppath = lambda _path, n: os.sep.join(_path.split(os.sep)[:-n])
 
+
+#######################################################################################
+# Splash Screen Class
+"""
+EXAMPLE:
+class App(tk.Tk):
+    def __init__(self):
+        tk.Tk.__init__(self)
+        self.withdraw()
+        splash = Splash(self,text="Welcome Home",width=300,
+            image=uppath(__file__, 3)+"\\common\\KRNCnegative.png")
+
+        ## setup stuff goes here
+        self.title("Main Window")
+        ## simulate a delay while loading
+        time.sleep(6)
+
+        ## finished loading so destroy splash
+        splash.destroy()
+
+        ## show selfdow again
+        self.deiconify()
+
+if __name__ == "__main__":
+    app = App()
+    app.mainloop()
+"""
+
+# Define Class
 class Splash(tk.Toplevel):
+    # Initialization Method
     def __init__(self,parent,fg='white',bg='#506c91',imgw=150,imgh=150,
                  width=200,height=200,image=None,text=''):
         tk.Toplevel.__init__(self, parent)
@@ -20,7 +60,7 @@ class Splash(tk.Toplevel):
         if text != '':
             self.showTxt(text=text,fg=fg,bg=bg,imgh=imgh)
         self.update()
-    
+    # Center, Show Image, and Show Text Methods
     def center(self):
         self.update_idletasks()
         width = self.winfo_width()
@@ -56,25 +96,32 @@ class Splash(tk.Toplevel):
         xbias = self.winfo_width() / 2 - txtFrame.winfo_width() / 2
         ybias = self.winfo_height() - (txtFrame.winfo_height() + 25 + imgh)
         txtFrame.grid(row=1, column=1, pady=ybias, padx=xbias)
+#######################################################################################
 
-class App(tk.Tk):
-    def __init__(self):
-        tk.Tk.__init__(self)
-        self.withdraw()
-        splash = Splash(self,text="Welcome Home",width=300,
-            image=uppath(__file__, 3)+"\\common\\images\\KRNCnegative.png")
+#######################################################################################
+# Scrollable Frame Class
+class ScrollableFrame(tk.Frame):
+    def __init__(self, container, width, height, bg, *args, **kwargs):
+        super().__init__(container, *args, **kwargs)
+        canvas = tk.Canvas(self,width=width,height=height,bg=bg)
+        scrollbar = tk.Scrollbar(self, orient="vertical", command=canvas.yview)
+        self.scrollable_frame = tk.Frame(canvas,bg=bg)
 
-        ## setup stuff goes here
-        self.title("Main Window")
-        ## simulate a delay while loading
-        time.sleep(6)
+        self.scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(
+                scrollregion=canvas.bbox("all")
+            )
+        )
 
-        ## finished loading so destroy splash
-        splash.destroy()
+        canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
 
-        ## show selfdow again
-        self.deiconify()
+        canvas.configure(yscrollcommand=scrollbar.set)
 
-if __name__ == "__main__":
-    app = App()
-    app.mainloop()
+        #canvas.pack_propagate(0)
+        #scrollbar.pack_propagate(0)
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+#######################################################################################
+
+# END
