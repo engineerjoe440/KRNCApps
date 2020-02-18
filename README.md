@@ -1,4 +1,4 @@
-# KRNC Apps ![KRNC Logo](/common/images/KRNC.png)
+# KRNC Apps <img src="https://github.com/engineerjoe440/KRNCApps/blob/master/common/images/KRNC.png" width="100">
 *Audio Manager and Simple Radio Applications Based around KRNC*
 ---
 
