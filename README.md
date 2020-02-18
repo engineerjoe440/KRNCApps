@@ -1,4 +1,4 @@
-# KRNC Apps ![KRNC Logo](/common/images/KRNC.png)
+# KRNC Apps ![KRNC Logo](/common/images/KRNC.png | width=50)
 *Audio Manager and Simple Radio Applications Based around KRNC*
 ---
 
