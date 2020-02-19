@@ -162,6 +162,7 @@ class App(tk.Tk):
     def handle_open(self,event):
         self.open_barn()
     def handle_save(self,event):
+        print("save")
         self.save_barn()
     def handle_save_as(self,event):
         self.save_barn_as()
