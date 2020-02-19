@@ -20,7 +20,7 @@ tablwidth = 1000
 tablheight = mainheight - 5
 headers = [
     {'heading': 'File Name',        'width': 000,   'type': 'text'},
-    {'heading': 'Audio Filter',     'width': 150,   'type': 'text'},
+    {'heading': 'Audio Filter',     'width': 150,   'type': 'bool'},
     {'heading': 'Title',            'width': 200,   'type': 'text'},
     {'heading': 'Artist',           'width': 200,   'type': 'text'},
 ]
@@ -126,7 +126,7 @@ class App(tk.Tk):
         # Generate Options Section
         optsFrame = tk.Frame(self, bg=bgblue)
         optsFrame.grid(row=0, column=2)
-        optTitle = tk.Label(optsFrame, text="Barn Options", fg=fgblue, bg=bgblue,
+        optTitle = tk.Label(optsFrame, text="Barn Tools", fg=fgblue, bg=bgblue,
                             font=self.pt11B)
         optTitle.grid(row=1, column=0, pady=5,padx=50)
         
@@ -213,7 +213,8 @@ class App(tk.Tk):
         # File Path is Valid, Store CSV!
         cellDict = self.model.getAllCells()
         with open(self.barn,'w') as outputfile:
-            outputfile.write('File Name,Audio Filter,Title,Artist')
+            headerstring = ','.join([i['heading'] for i in headers])
+            outputfile.write(headerstring+'\n')
             for rowList in cellDict.values():
                 row = ','.join(rowList)     # Create CSV Row
                 outputfile.write(row+'\n')  # Write to File
