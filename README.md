@@ -24,7 +24,7 @@ The various applications in this repository are described as follows:
     - Fully-Developed, yet light, real-time radio automation and playback solution
     - Manages full directories of music and imaging, mixing as necessary
 
- - Stock Contractor
+ - Branding Hand
     - Broadcast imaging filter and preprocessor with full system loading functionality
 
  - Ranch Hand

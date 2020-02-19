@@ -6,6 +6,11 @@ Universal Song Barn (USB) Manager System
 By: Joe Stanley
 #######################################################################################
 """
+# Define Version Information
+__version__ = 0.1
+def version():
+    msg="UniversalSongBarn Manager Version: {}".format(__version__)
+    return(msg)
 
 # Required Imports
 import tkinter as tk
@@ -24,15 +29,21 @@ from tkinterroutines import Splash
 # Import Local Requirements
 from app import App
 
-# Define Local Support File Path
-stockpath = "C:/ProgramData/StanleySolutions/KRNC/USBManager/"
-barnpath = "/KRNC/"
-
-# Create Local Path if Nonexistant
-Path(stockpath).mkdir(parents=True, exist_ok=True)
+# Identify Argument
+barnfile = None
+cmdargs = sys.argv
+for arg in cmdargs:
+    if arg.lower().endswith('.barn') :
+        # Found Barn Description File
+        barnfile = arg
+        break
 
 # Run System
 mainApp = App()
+# Barn Description File was Found
+if barnfile != None:
+    mainApp.open_barn(barnfile)
+mainApp.set_about_callback(version)
 time.sleep(3)
 mainApp.run()
 

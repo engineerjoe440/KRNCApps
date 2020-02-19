@@ -27,12 +27,20 @@ headers = [
 # Evaluate Width of File Name Column
 headers[0]['width'] = tablwidth - sum([i['width'] for i in headers]) + 51
 
+# Define Local Support File Path
+utilpath = "C:/ProgramData/StanleySolutions/KRNC/USBManager/"
+stockpath = "C:/Users/{}/Music/KRNC/USBManager/"
+barnpath = "/KRNC/"
+
+def dummy():
+    return(1)
+
 # Required Imports
 import tkinter as tk
 from tkinter.font import Font
 from PIL import Image, ImageTk
 import time, os, sys
-from tabulate import tabulate
+from pathlib import Path
 from tkintertable import TableCanvas, TableModel
 
 # Prepare Path to Accept Common Imports
@@ -41,9 +49,16 @@ parentdir = '/'.join( curdir.split('\\')[:-1] )
 sys.path.append(parentdir + '/common')
 imagedir = parentdir + '/common/images'
 
+# Create Local Paths if Nonexistant
+stockpath = stockpath.format(os.getlogin())
+Path(utilpath).mkdir(parents=True, exist_ok=True)
+Path(stockpath).mkdir(parents=True, exist_ok=True)
+
 # Import Common Requirements
 from tkinterroutines import Splash, ScrollableFrame
 
+def donothing():
+   x = 0
 
 class App(tk.Tk):
     def __init__(self):
@@ -58,12 +73,40 @@ class App(tk.Tk):
         # Define Fonts
         self.pt11 = Font(size=11)
         self.pt11B = Font(size=11, weight='bold')
+        
+        # Class Variable Declaration
+        self.barn = None
 
         # Prepare Main App Window
         self.title("KRNC Universal Song Barn (USB) Manager")
         self.configure(background=bgblue)
         self.geometry("{}x{}".format(mainwidth,mainheight))
         self.iconbitmap(imagedir+'/KRNC.ico')
+        
+        # Prepare Menu
+        self.menubar = tk.Menu(self)
+        self.filemenu = tk.Menu(self.menubar,tearoff=0)
+        self.aboutmenu = tk.Menu(self.menubar,tearoff=0)
+        self.filemenu.add_command(  label="New Barn",  command=donothing,
+                                    accelerator="Ctrl+N")
+        self.filemenu.add_command(  label="Open Barn", command=self.open_barn,
+                                    accelerator="Ctrl+O")
+        self.filemenu.add_command(  label="Save Barn", command=self.save_barn,
+                                    accelerator="Ctrl+S")
+        self.filemenu.add_command(  label="Save Barn As", command=self.save_barn_as,
+                                    accelerator="Ctrl+Shift+S")
+        self.filemenu.add_separator()
+        self.filemenu.add_command(label="Exit",command=self.quit,accelerator="Ctrl+Q")
+        self.aboutmenu.add_command(label="About...", command=self.popupmsg)
+        self.menubar.add_cascade(label="File", menu=self.filemenu)
+        self.menubar.add_cascade(label="Help", menu=self.aboutmenu)
+        self.config(menu=self.menubar)
+        
+        # Bind Keys
+        self.bind_all("<Control-q>", self.quit)
+        self.bind_all("<Control-o>", self.handle_open)
+        self.bind_all("<Control-s>", self.handle_save)
+        self.bind_all("<Control-S>", self.handle_save_as)
         
         # Generate Table Section
         self.tablFrame = tk.Frame(self, bg=bgblue,width=tablwidth,height=tablheight)
@@ -74,17 +117,11 @@ class App(tk.Tk):
         self.table = TableCanvas(   self.tablFrame, model=self.model,cellbackgr=bglblue,
                                     rowselectedcolor=bgblue,rowheight=25,
                                     thefont=('Segoe UI',9),entrybackgr=bggrey,
-                                    selectedcolor=bggrey,multipleselectioncolor=bglblue,)
+                                    selectedcolor=bggrey,multipleselectioncolor=bglblue,
+                                    icon=imagedir+'/KRNC.ico',)
         self.table.show()
         self.model.addRow()
-        for c,column in enumerate(headers):
-            name    = column['heading']
-            ctype   = column['type']
-            width   = column['width']
-            self.model.addColumn(colname=name,coltype=ctype)
-            self.table.resizeColumn(c,width)
-            self.model.setValueAt('',0,c)
-        self.table.redraw()
+        self.set_columns()
         
         # Generate Options Section
         optsFrame = tk.Frame(self, bg=bgblue)
@@ -92,6 +129,9 @@ class App(tk.Tk):
         optTitle = tk.Label(optsFrame, text="Barn Options", fg=fgblue, bg=bgblue,
                             font=self.pt11B)
         optTitle.grid(row=1, column=0, pady=5,padx=50)
+        
+    def quit(self, event):
+        sys.exit(0)
     
     def center(self):
         # Center Window on Screen
@@ -106,6 +146,100 @@ class App(tk.Tk):
         y = self.winfo_screenheight() // 2 - self_height // 2
         self.geometry('{}x{}+{}+{}'.format(width, height, x, y))
         self.deiconify()
+    
+    def set_columns(self):
+        # Format Columns as Necessary
+        for c,column in enumerate(headers):
+            name    = column['heading']
+            ctype   = column['type']
+            width   = column['width']
+            self.model.addColumn(colname=name,coltype=ctype)
+            self.table.resizeColumn(c,width)
+            self.model.setValueAt('',0,c)
+        self.table.redraw()
+    
+    # Define Handler Functions
+    def handle_open(self,event):
+        self.open_barn()
+    def handle_save(self,event):
+        self.save_barn()
+    def handle_save_as(self,event):
+        self.save_barn_as()
+    
+    def open_barn(self,barn=''):
+        # Open *.barn Song List File
+        # Test if passed as argument
+        if barn != '':
+            self.barn = barn
+        else:
+            self.barn = tk.filedialog.askopenfilename(  initialdir=stockpath,
+                                                        title="Open Barn Roster",
+                                                        filetypes=(
+                                                            ("Song Barn","*.barn"),
+                                                            ("all files","*.*"),
+                                                        )
+                                                     )
+        # Validate Input
+        if self.barn == '':
+            return
+        # Input is Valid, Load as CSV, then Reset Table
+        self.table.importTable(filename=self.barn)
+        self.set_columns()
+    
+    def save_barn_as(self,barn=''):
+        # Clear Stored Barn Name
+        self.barn = None
+        self.save_barn(barn=barn)
+    
+    def save_barn(self,barn=''):
+        # Save Current Barn
+        if barn != '':
+            self.barn = barn
+        elif self.barn == None:
+            self.barn = tk.filedialog.asksaveasfilename(initialdir=stockpath,
+                                                        title="Save Barn Roster",
+                                                        filetypes=(
+                                                            ("Song Barn","*.barn"),
+                                                            ("all files","*.*"),
+                                                        ),
+                                                        defaultextension='.barn',
+                                                        )
+        # Validate Input
+        if self.barn == '':
+            return
+        # Format with file extension
+        if not self.barn.endswith('.barn'):
+            self.barn += '.barn'
+        # File Path is Valid, Store CSV!
+        cellDict = self.model.getAllCells()
+        with open(self.barn,'w') as outputfile:
+            outputfile.write('File Name,Audio Filter,Title,Artist')
+            for rowList in cellDict.values():
+                row = ','.join(rowList)     # Create CSV Row
+                outputfile.write(row+'\n')  # Write to File
+    
+    def set_about_callback(self,callable,title="KRNC USB Manager Info",bg=bggrey,
+                           button_txt="Close",height=100,width=300,*args,**kwargs):
+        # Define Callback Methodology to Change The `About` Popup
+        def callback():
+            self.popupmsg(msg=callable(*args,**kwargs),bg=bg,height=height,
+                          width=width,title=title,button_txt=button_txt)
+        self.aboutmenu.entryconfig(0,label="About...",command=callback)
+    
+    def popupmsg(self,msg="--default--",title="KRNC USB Manager Info",
+                 button_txt="Close",bg=bggrey,height=200,width=400):
+        popup = tk.Tk()
+        popup.wm_title(title)
+        popup.configure(background=bg)
+        popup.geometry("{}x{}".format(width,height))
+        popup.iconbitmap(imagedir+'/KRNC.ico')
+        label = tk.Label(popup, text=msg, font=self.pt11, bg=bg)
+        label.pack(side="top", fill="x", pady=10)
+        bFrame = tk.Frame(popup, bg=bg, pady=10)
+        bFrame.pack(side="bottom")
+        B1 = tk.Button(bFrame, text=button_txt, command = popup.destroy)
+        B1.pack(side="bottom")
+        popup.mainloop()
     
     def run(self):
         # Finished Loading, Destroy Splash, Display App
