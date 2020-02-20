@@ -13,11 +13,13 @@ fgblue = 'white'
 bglblue = '#bdc7e5'
 fglblue = 'black'
 bggrey = '#c9cdd9'
-fggrey = 'black'
+fggrey = '#506c91'
 mainwidth = 1300
 mainheight = 600
 tablwidth = 1000
 tablheight = mainheight - 5
+drivheight = 100
+barnheight = mainheight - drivheight
 headers = [
     {'heading': 'File Name',        'width': 000,   'type': 'text'},
     {'heading': 'Audio Filter',     'width': 200,   'type': 'text'},
@@ -150,26 +152,33 @@ class App(tk.Tk):
         self.set_columns()
         
         # Generate Options Sections
-        optsFrame = tk.Frame(self, bg=bgblue)
-        barnFrame = tk.Frame(optsFrame, bg=bgblue)
-        drivFrame = tk.Frame(optsFrame, bg=bgblue)
-        optsFrame.grid(row=0, column=2)
-        barnFrame.grid(row=0, column=0)
-        drivFrame.grid(row=1, column=0)
+        optsFrame = tk.Frame(self, bg=bgblue, height=tablheight)
+        barnFrame = tk.Frame(optsFrame, bg=bgblue, height=barnheight)
+        drivFrame = tk.Frame(optsFrame, bg=bggrey, height=drivheight)
+        optsFrame.grid(row=0, column=2, sticky="nsew")
+        optsFrame.columnconfigure(0, weight=1)
+        optsFrame.rowconfigure(0, weight=6)
+        optsFrame.rowconfigure(1, weight=1)
+        barnFrame.grid(row=0, column=0, sticky="new")
+        drivFrame.grid(row=1, column=0, sticky="nsew")
         
         # Generate Barn Frame Information and Controls
         barnTitle = tk.Label(barnFrame, text="Barn Tools", fg=fgblue, bg=bgblue,
                             font=self.pt11B)
-        barnTitle.grid(row=0, column=0, pady=5,padx=50)
+        barnTitle.grid(row=0, column=0, pady=5, padx=50)
         self.filtermenu = tk.OptionMenu(barnFrame,self.filterVar,*self.audiofilters)
         self.filtermenu.config( width=int((mainwidth-tablwidth)*0.060),
                                 background=bglblue)
         self.filtermenu.grid(row=1, column=0)
         
         # Generate Drive Frame Information
-        drivTitle = tk.Label(drivFrame, text="Drive Tools", fg=fgblue, bg=bgblue,
+        drivTitle = tk.Label(drivFrame, text="Drive Tools", fg=fggrey, bg=bggrey,
                             font=self.pt11B)
-        drivTitle.grid(row=0, column=0, pady=5,padx=50)
+        drivTitle.grid(row=0, column=0, pady=5, padx=50, columnspan=2)
+        updtBtn = tk.Button(drivFrame, text="Call Home", bg=bglblue, command=donothing)
+        sendBtn = tk.Button(drivFrame, text="Drive Out", bg=bglblue, command=donothing)
+        updtBtn.grid(row=1, column=0, padx=5, pady=5)
+        sendBtn.grid(row=1, column=1, padx=5, pady=5)
         
     def quit(self, event):
         sys.exit(0)
