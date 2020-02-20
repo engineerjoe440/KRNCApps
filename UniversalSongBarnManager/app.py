@@ -158,18 +158,18 @@ class App(tk.Tk):
         drivFrame.grid(row=1, column=0)
         
         # Generate Barn Frame Information and Controls
-        optTitle = tk.Label(barnFrame, text="Barn Tools", fg=fgblue, bg=bgblue,
+        barnTitle = tk.Label(barnFrame, text="Barn Tools", fg=fgblue, bg=bgblue,
                             font=self.pt11B)
-        optTitle.grid(row=0, column=0, pady=5,padx=50)
+        barnTitle.grid(row=0, column=0, pady=5,padx=50)
         self.filtermenu = tk.OptionMenu(barnFrame,self.filterVar,*self.audiofilters)
         self.filtermenu.config( width=int((mainwidth-tablwidth)*0.060),
                                 background=bglblue)
         self.filtermenu.grid(row=1, column=0)
         
         # Generate Drive Frame Information
-        optTitle = tk.Label(drivFrame, text="Drive Tools", fg=fgblue, bg=bgblue,
+        drivTitle = tk.Label(drivFrame, text="Drive Tools", fg=fgblue, bg=bgblue,
                             font=self.pt11B)
-        optTitle.grid(row=0, column=0, pady=5,padx=50)
+        drivTitle.grid(row=0, column=0, pady=5,padx=50)
         
     def quit(self, event):
         sys.exit(0)
