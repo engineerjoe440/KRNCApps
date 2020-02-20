@@ -20,20 +20,19 @@ tablwidth = 1000
 tablheight = mainheight - 5
 headers = [
     {'heading': 'File Name',        'width': 000,   'type': 'text'},
-    {'heading': 'Audio Filter',     'width': 150,   'type': 'bool'},
-    {'heading': 'Title',            'width': 200,   'type': 'text'},
-    {'heading': 'Artist',           'width': 200,   'type': 'text'},
+    {'heading': 'Audio Filter',     'width': 200,   'type': 'text'},
+    {'heading': 'Pastured',         'width': 150,   'type': 'text'},
 ]
 # Evaluate Width of File Name Column
-headers[0]['width'] = tablwidth - sum([i['width'] for i in headers]) + 51
+headers[0]['width'] = tablwidth + 60 - sum([i['width'] for i in headers])
 
 # Define Local Support File Path
 utilpath = "C:/ProgramData/StanleySolutions/KRNC/USBManager/"
 stockpath = "C:/Users/{}/Music/KRNC/USBManager/"
+musicpath = "C:/Users/{}/Music/"
 barnpath = "/KRNC/"
-
-def dummy():
-    return(1)
+filterpath = utilpath + 'Filters/'
+krncbrandp = utilpath + 'KRNCbranding/'
 
 # Required Imports
 import tkinter as tk
@@ -51,7 +50,9 @@ imagedir = parentdir + '/common/images'
 
 # Create Local Paths if Nonexistant
 stockpath = stockpath.format(os.getlogin())
-Path(utilpath).mkdir(parents=True, exist_ok=True)
+musicpath = musicpath.format(os.getlogin())
+Path(filterpath).mkdir(parents=True, exist_ok=True)
+Path(krncbrandp).mkdir(parents=True, exist_ok=True)
 Path(stockpath).mkdir(parents=True, exist_ok=True)
 
 # Import Common Requirements
@@ -76,9 +77,22 @@ class App(tk.Tk):
         
         # Class Variable Declaration
         self.barn = None
+        self.krncbrand = tk.BooleanVar()
+        self.filterVar = tk.StringVar()
+        self.krncbrand.set(True)
+        self.filterVar.set("-filter-")
+        # Find Filter Driver Files (Masked Python Files)
+        self.audiofilters = [""]
+        for file in os.listdir(filterpath):
+            if file.endswith('.filt'):
+                # Generate Look-Up-Dictionary
+                filter = { file[:-5]: os.path.join(filterpath,file) }
+                # Store in Dictionary
+                self.audiofilters.append( filter )
 
         # Prepare Main App Window
-        self.title("KRNC Universal Song Barn (USB) Manager")
+        self.title( "KRNC Universal Song Barn (USB) Manager"+
+                    " - Your Music Lives Here.")
         self.configure(background=bgblue)
         self.geometry("{}x{}".format(mainwidth,mainheight))
         self.iconbitmap(imagedir+'/KRNC.ico')
@@ -86,6 +100,7 @@ class App(tk.Tk):
         # Prepare Menu
         self.menubar = tk.Menu(self)
         self.filemenu = tk.Menu(self.menubar,tearoff=0)
+        self.barnmenu = tk.Menu(self.menubar,tearoff=0)
         self.aboutmenu = tk.Menu(self.menubar,tearoff=0)
         self.filemenu.add_command(  label="New Barn",  command=donothing,
                                     accelerator="Ctrl+N")
@@ -97,8 +112,18 @@ class App(tk.Tk):
                                     accelerator="Ctrl+Shift+S")
         self.filemenu.add_separator()
         self.filemenu.add_command(label="Exit",command=self.quit,accelerator="Ctrl+Q")
+        self.barnmenu.add_command( label="Add Song(s) to Barn",accelerator="Ctrl+A",
+                                    command=self.add_songs)
+        self.barnmenu.add_command( label="Empty Barn",command=self.empty_barn)
+        self.barnmenu.add_separator()
+        self.barnmenu.add_checkbutton( label="Enable KRNC Branding",
+                                        command=donothing,var=self.krncbrand)
+        self.barnmenu.add_separator()
+        self.barnmenu.add_command(  label="Update KRNC Branding",
+                                    command=donothing)
         self.aboutmenu.add_command(label="About...", command=self.popupmsg)
         self.menubar.add_cascade(label="File", menu=self.filemenu)
+        self.menubar.add_cascade(label="Barn", menu=self.barnmenu)
         self.menubar.add_cascade(label="Help", menu=self.aboutmenu)
         self.config(menu=self.menubar)
         
@@ -107,6 +132,7 @@ class App(tk.Tk):
         self.bind_all("<Control-o>", self.handle_open)
         self.bind_all("<Control-s>", self.handle_save)
         self.bind_all("<Control-S>", self.handle_save_as)
+        self.bind_all("<Control-a>", self.handle_add)
         
         # Generate Table Section
         self.tablFrame = tk.Frame(self, bg=bgblue,width=tablwidth,height=tablheight)
@@ -123,12 +149,27 @@ class App(tk.Tk):
         self.model.addRow()
         self.set_columns()
         
-        # Generate Options Section
+        # Generate Options Sections
         optsFrame = tk.Frame(self, bg=bgblue)
+        barnFrame = tk.Frame(optsFrame, bg=bgblue)
+        drivFrame = tk.Frame(optsFrame, bg=bgblue)
         optsFrame.grid(row=0, column=2)
-        optTitle = tk.Label(optsFrame, text="Barn Tools", fg=fgblue, bg=bgblue,
+        barnFrame.grid(row=0, column=0)
+        drivFrame.grid(row=1, column=0)
+        
+        # Generate Barn Frame Information and Controls
+        optTitle = tk.Label(barnFrame, text="Barn Tools", fg=fgblue, bg=bgblue,
                             font=self.pt11B)
-        optTitle.grid(row=1, column=0, pady=5,padx=50)
+        optTitle.grid(row=0, column=0, pady=5,padx=50)
+        self.filtermenu = tk.OptionMenu(barnFrame,self.filterVar,*self.audiofilters)
+        self.filtermenu.config( width=int((mainwidth-tablwidth)*0.060),
+                                background=bglblue)
+        self.filtermenu.grid(row=1, column=0)
+        
+        # Generate Drive Frame Information
+        optTitle = tk.Label(drivFrame, text="Drive Tools", fg=fgblue, bg=bgblue,
+                            font=self.pt11B)
+        optTitle.grid(row=0, column=0, pady=5,padx=50)
         
     def quit(self, event):
         sys.exit(0)
@@ -159,12 +200,51 @@ class App(tk.Tk):
         self.table.redraw()
     
     # Define Handler Functions
+    def handle_add(self,event):
+        self.add_songs()
     def handle_open(self,event):
         self.open_barn()
     def handle_save(self,event):
         self.save_barn()
     def handle_save_as(self,event):
         self.save_barn_as()
+    
+    def add_songs(self,songlist=[]):
+        # Prompt User to Add Songs
+        if songlist == []:
+            songlist = tk.filedialog.askopenfilenames(  parent=self,
+                                                        initialdir=musicpath,
+                                                        title="Add Stock to Barn",
+                                                        filetypes=(
+                                                            ("audio files",
+                                                                ".mp3 .wav"),
+                                                            ("all files","."),
+                                                        ),
+                                                        multiple=True,
+                                                     )
+        # Validate Dataset
+        if songlist == []:
+            return
+        # Remove Dummy Row if No Barn Declared
+        if (self.barn == None) and (self.model.getRowCount() == 1):
+            self.model.deleteRows()
+        # Add new Rows to Table
+        filekwarg = headers[0]['heading']
+        lockkwarg = headers[2]['heading']
+        for song in songlist:
+            self.table.addRow(key=None,**{filekwarg:song,lockkwarg:'false'})
+    
+    def empty_barn(self):
+        # Clear Table by Deleting Rows
+        self.model.deleteRows()
+        self.model.addRow()
+        self.set_columns()
+    
+    def new_barn(self):
+        # Clear Barn
+        self.empty_barn()
+        # Remove Barn Reference
+        self.barn = None
     
     def open_barn(self,barn=''):
         # Open *.barn Song List File
@@ -175,15 +255,15 @@ class App(tk.Tk):
             self.barn = tk.filedialog.askopenfilename(  initialdir=stockpath,
                                                         title="Open Barn Roster",
                                                         filetypes=(
-                                                            ("Song Barn","*.barn"),
-                                                            ("all files","*.*"),
+                                                            ("Song Barn",".barn"),
+                                                            ("all files","."),
                                                         )
                                                      )
         # Validate Input
         if self.barn == '':
             return
         # Input is Valid, Load as CSV, then Reset Table
-        self.table.importTable(filename=self.barn)
+        self.table.importCSV(filename=self.barn)
         self.set_columns()
     
     def save_barn_as(self,barn=''):
@@ -199,8 +279,8 @@ class App(tk.Tk):
             self.barn = tk.filedialog.asksaveasfilename(initialdir=stockpath,
                                                         title="Save Barn Roster",
                                                         filetypes=(
-                                                            ("Song Barn","*.barn"),
-                                                            ("all files","*.*"),
+                                                            ("Song Barn",".barn"),
+                                                            ("all files","."),
                                                         ),
                                                         defaultextension='.barn',
                                                         )

@@ -1324,8 +1324,6 @@ class TableCanvas(Canvas):
                         "Set Text Color" : lambda : self.setcellColor(rows,cols,key='fg'),
                         "Copy" : lambda : self.copyCell(rows, cols),
                         "Paste" : lambda : self.pasteCell(rows, cols),
-                        "Fill Down" : lambda : self.fillDown(rows, cols),
-                        "Fill Right" : lambda : self.fillAcross(cols, rows),
                         "Add Row(s)" : lambda : self.addRows(),
                         "Delete Row(s)" : lambda : self.deleteRow(),
                         "Clear Data" : lambda : self.deleteCells(rows, cols),
@@ -1333,8 +1331,7 @@ class TableCanvas(Canvas):
                         "Auto Fit Columns" : self.autoResizeColumns,
                         "Preferences" : self.showtablePrefs,}
 
-        main = ["Set Fill Color","Set Text Color","Copy", "Paste", "Fill Down","Fill Right",
-                "Clear Data"]
+        main = ["Set Fill Color","Set Text Color","Copy", "Paste", "Clear Data"]
         general = ["Select All", "Add Row(s)" , "Delete Row(s)", "Auto Fit Columns", "Preferences"]
 
         def createSubMenu(parent, label, commands):
