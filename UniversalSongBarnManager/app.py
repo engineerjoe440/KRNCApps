@@ -41,6 +41,8 @@ import tkinter as tk
 from tkinter.font import Font
 from PIL import Image, ImageTk
 import time, os, sys
+from importlib.util import spec_from_loader, module_from_spec
+from importlib.machinery import SourceFileLoader 
 from pathlib import Path
 from tkintertable import TableCanvas, TableModel
 
@@ -59,6 +61,15 @@ Path(stockpath).mkdir(parents=True, exist_ok=True)
 
 # Import Common Requirements
 from tkinterroutines import Splash, ScrollableFrame
+
+# Define Filter Import Function
+def load_filter_driver(name,path=filterpath):
+    # Load Module
+    spec = spec_from_loader(name, SourceFileLoader(name, path+name))
+    mod = module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    # Return Module Handle
+    return(mod)
 
 def donothing():
    x = 0
@@ -81,16 +92,19 @@ class App(tk.Tk):
         self.barn = None
         self.krncbrand = tk.BooleanVar()
         self.filterVar = tk.StringVar()
+        self.pasturVal = tk.StringVar()
         self.krncbrand.set(True)
         self.filterVar.set("-filter-")
+        self.pasturVal.set("-pasture-")
+        self.pasturOpt = ['FALSE','TRUE']
         # Find Filter Driver Files (Masked Python Files)
-        self.audiofilters = [""]
+        self.audiofilters = {}
         for file in os.listdir(filterpath):
             if file.endswith('.filt'):
+                # Import Module and Manage Handle
+                handle = load_filter_driver(file)
                 # Generate Look-Up-Dictionary
-                filter = { file[:-5]: os.path.join(filterpath,file) }
-                # Store in Dictionary
-                self.audiofilters.append( filter )
+                self.audiofilters[file[:-5]] = handle
 
         # Prepare Main App Window
         self.title( "KRNC Universal Song Barn (USB) Manager"+
@@ -166,10 +180,15 @@ class App(tk.Tk):
         barnTitle = tk.Label(barnFrame, text="Barn Tools", fg=fgblue, bg=bgblue,
                             font=self.pt11B)
         barnTitle.grid(row=0, column=0, pady=5, padx=50)
-        self.filtermenu = tk.OptionMenu(barnFrame,self.filterVar,*self.audiofilters)
+        self.filtermenu = tk.OptionMenu(barnFrame,self.filterVar,
+                                        *self.audiofilters.keys())
         self.filtermenu.config( width=int((mainwidth-tablwidth)*0.060),
                                 background=bglblue)
-        self.filtermenu.grid(row=1, column=0)
+        self.filtermenu.grid(row=1, column=0, pady=5)
+        self.pasturmenu = tk.OptionMenu(barnFrame,self.pasturVal,*self.pasturOpt)
+        self.pasturmenu.config( width=int((mainwidth-tablwidth)*0.060),
+                                background=bglblue)
+        self.pasturmenu.grid(row=2, column=0, pady=5)
         
         # Generate Drive Frame Information
         drivTitle = tk.Label(drivFrame, text="Drive Tools", fg=fggrey, bg=bggrey,
@@ -217,6 +236,24 @@ class App(tk.Tk):
         self.save_barn()
     def handle_save_as(self,event):
         self.save_barn_as()
+    
+    def update(self):
+        # Capture Current Information
+        curFilter = self.filterVar.get()
+        curPastur = self.pasturVal.get()
+        ROWi = self.table.getSelectedRow()
+        filter = self.model.getValueAt(ROWi,1)
+        pasture = self.model.getValueAt(ROWi,2)
+        # Update Filter
+        if (curFilter != "-filter-"):
+            self.model.setValueAt(curFilter,ROWi,1)
+            self.table.redraw()
+        # Update Pasture
+        if (curPastur!="-pasture-") and (pasture!=curPastur):
+            self.model.setValueAt(curPastur,ROWi,2)
+            self.table.redraw()
+        # Set "After" Callback
+        self.after(50,self.update)
     
     def add_songs(self,songlist=[]):
         # Prompt User to Add Songs
@@ -337,6 +374,7 @@ class App(tk.Tk):
         self.deiconify()
         self.center()
         # Run Main Loop
+        self.after(50,self.update)
         self.mainloop()
 
 if __name__ == "__main__":
