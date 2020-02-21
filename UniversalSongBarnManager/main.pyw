@@ -9,7 +9,8 @@ By: Joe Stanley
 # Define Version Information
 __version__ = 0.1
 def version():
-    msg="UniversalSongBarn Manager Version: {}".format(__version__)
+    msg  = "UniversalSongBarn Manager Version: {}".format(__version__)
+    msg += "\nby Stanley Solutions"
     return(msg)
 
 # Required Imports

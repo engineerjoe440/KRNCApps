@@ -41,6 +41,7 @@ import tkinter as tk
 from tkinter.font import Font
 from PIL import Image, ImageTk
 import time, os, sys
+from functools import partial
 from importlib.util import spec_from_loader, module_from_spec
 from importlib.machinery import SourceFileLoader 
 from pathlib import Path
@@ -117,6 +118,7 @@ class App(tk.Tk):
         self.menubar = tk.Menu(self)
         self.filemenu = tk.Menu(self.menubar,tearoff=0)
         self.barnmenu = tk.Menu(self.menubar,tearoff=0)
+        self.filtmenu = tk.Menu(self.menubar,tearoff=0)
         self.aboutmenu = tk.Menu(self.menubar,tearoff=0)
         self.filemenu.add_command(  label="New Barn",  command=donothing,
                                     accelerator="Ctrl+N")
@@ -132,9 +134,15 @@ class App(tk.Tk):
                                     command=self.add_songs)
         self.barnmenu.add_command( label="Empty Barn",command=self.empty_barn)
         self.barnmenu.add_separator()
+        # Iteratively Generate Filter Submenu
+        for filter in self.audiofilters.keys():
+            # Add Menu Option for Each Filter
+            self.filtmenu.add_command(  label=filter,
+                                        command=partial(self.gFilt,filter))
+        self.barnmenu.add_cascade(label="Global Filter", menu=self.filtmenu)
+        self.barnmenu.add_separator()
         self.barnmenu.add_checkbutton( label="Enable KRNC Branding",
                                         command=donothing,var=self.krncbrand)
-        self.barnmenu.add_separator()
         self.barnmenu.add_command(  label="Update KRNC Branding",
                                     command=donothing)
         self.aboutmenu.add_command(label="About...", command=self.popupmsg)
@@ -171,7 +179,7 @@ class App(tk.Tk):
         drivFrame = tk.Frame(optsFrame, bg=bggrey, height=drivheight)
         optsFrame.grid(row=0, column=2, sticky="nsew")
         optsFrame.columnconfigure(0, weight=1)
-        optsFrame.rowconfigure(0, weight=6)
+        optsFrame.rowconfigure(0, weight=10)
         optsFrame.rowconfigure(1, weight=1)
         barnFrame.grid(row=0, column=0, sticky="new")
         drivFrame.grid(row=1, column=0, sticky="nsew")
@@ -184,11 +192,11 @@ class App(tk.Tk):
                                         *self.audiofilters.keys())
         self.filtermenu.config( width=int((mainwidth-tablwidth)*0.060),
                                 background=bglblue)
-        self.filtermenu.grid(row=1, column=0, pady=5)
+        self.filtermenu.grid(row=1, column=0, padx=5, pady=5, sticky="nsew")
         self.pasturmenu = tk.OptionMenu(barnFrame,self.pasturVal,*self.pasturOpt)
         self.pasturmenu.config( width=int((mainwidth-tablwidth)*0.060),
                                 background=bglblue)
-        self.pasturmenu.grid(row=2, column=0, pady=5)
+        self.pasturmenu.grid(row=2, column=0, padx=5, pady=5, sticky="nsew")
         
         # Generate Drive Frame Information
         drivTitle = tk.Label(drivFrame, text="Drive Tools", fg=fggrey, bg=bggrey,
@@ -196,8 +204,10 @@ class App(tk.Tk):
         drivTitle.grid(row=0, column=0, pady=5, padx=50, columnspan=2)
         updtBtn = tk.Button(drivFrame, text="Call Home", bg=bglblue, command=donothing)
         sendBtn = tk.Button(drivFrame, text="Drive Out", bg=bglblue, command=donothing)
-        updtBtn.grid(row=1, column=0, padx=5, pady=5)
-        sendBtn.grid(row=1, column=1, padx=5, pady=5)
+        frmtBtn = tk.Button(drivFrame, text="Train Drive", bg=bglblue, command=donothing)
+        updtBtn.grid(row=1, column=0, padx=5, pady=5, sticky="nsew")
+        sendBtn.grid(row=1, column=1, padx=5, pady=5, sticky="nsew")
+        frmtBtn.grid(row=2, column=0, padx=5, pady=5, columnspan=2, sticky="nsew")
         
     def quit(self, event):
         sys.exit(0)
@@ -254,6 +264,12 @@ class App(tk.Tk):
             self.table.redraw()
         # Set "After" Callback
         self.after(50,self.update)
+    
+    def gFilt(self,filter):
+        # Iteratively Set Filter Column
+        for i in range(self.model.getRowCount()):
+            self.model.setValueAt(filter,i,1)
+        self.table.redraw()
     
     def add_songs(self,songlist=[]):
         # Prompt User to Add Songs
