@@ -32,7 +32,9 @@ headers[0]['width'] = tablwidth + 60 - sum([i['width'] for i in headers])
 utilpath = "C:/ProgramData/StanleySolutions/KRNC/USBManager/"
 stockpath = "C:/Users/{}/Music/KRNC/USBManager/"
 musicpath = "C:/Users/{}/Music/"
-barnpath = "/KRNC/"
+barnpath = "/KRNC"
+brndpath = "/BRAND"
+drivedsc = "krncdrive.barn"
 filterpath = utilpath + 'Filters/'
 krncbrandp = utilpath + 'KRNCbranding/'
 
@@ -43,7 +45,9 @@ from PIL import Image, ImageTk
 import time, os, sys
 from functools import partial
 from importlib.util import spec_from_loader, module_from_spec
-from importlib.machinery import SourceFileLoader 
+from importlib.machinery import SourceFileLoader
+import win32com.client
+from ctypes import windll, WINFUNCTYPE, c_wchar_p, c_int, c_void_p
 from pathlib import Path
 from tkintertable import TableCanvas, TableModel
 
@@ -80,23 +84,30 @@ class App(tk.Tk):
         # Initialize App, then Withdraw while loading
         tk.Tk.__init__(self)
         self.withdraw()
+        self.logo = imagedir+"/KRNCnegative.png"
+        self.icon = imagedir+'/KRNC.ico'
         self.splash = Splash(   self,
                                 text="Welcome Home",
                                 width=300,
-                                image=imagedir+"/KRNCnegative.png")
+                                image=self.logo)
         
         # Define Fonts
         self.pt11 = Font(size=11)
         self.pt11B = Font(size=11, weight='bold')
+        self.pt16B = Font(size=16, weight='bold')
         
         # Class Variable Declaration
         self.barn = None
         self.krncbrand = tk.BooleanVar()
         self.filterVar = tk.StringVar()
         self.pasturVal = tk.StringVar()
+        self.driveVal = tk.StringVar()
+        self.brandVal = tk.StringVar()
         self.krncbrand.set(True)
         self.filterVar.set("-filter-")
         self.pasturVal.set("-pasture-")
+        self.driveVal.set("-usb-drive-")
+        self.brandVal.set("-filter-")
         self.pasturOpt = ['FALSE','TRUE']
         # Find Filter Driver Files (Masked Python Files)
         self.audiofilters = {}
@@ -106,13 +117,15 @@ class App(tk.Tk):
                 handle = load_filter_driver(file)
                 # Generate Look-Up-Dictionary
                 self.audiofilters[file[:-5]] = handle
+        # Find Available Drives Ignoring C: and any CD-ROM Drives
+        self.scanDrives()
 
         # Prepare Main App Window
         self.title( "KRNC Universal Song Barn (USB) Manager"+
                     " - Your Music Lives Here.")
         self.configure(background=bgblue)
         self.geometry("{}x{}".format(mainwidth,mainheight))
-        self.iconbitmap(imagedir+'/KRNC.ico')
+        self.iconbitmap(self.icon)
         
         # Prepare Menu
         self.menubar = tk.Menu(self)
@@ -181,33 +194,43 @@ class App(tk.Tk):
         optsFrame.columnconfigure(0, weight=1)
         optsFrame.rowconfigure(0, weight=10)
         optsFrame.rowconfigure(1, weight=1)
-        barnFrame.grid(row=0, column=0, sticky="new")
+        barnFrame.grid(row=0, column=0, sticky="nsew")
         drivFrame.grid(row=1, column=0, sticky="nsew")
         
         # Generate Barn Frame Information and Controls
         barnTitle = tk.Label(barnFrame, text="Barn Tools", fg=fgblue, bg=bgblue,
-                            font=self.pt11B)
-        barnTitle.grid(row=0, column=0, pady=5, padx=50)
-        self.filtermenu = tk.OptionMenu(barnFrame,self.filterVar,
-                                        *self.audiofilters.keys())
-        self.filtermenu.config( width=int((mainwidth-tablwidth)*0.060),
-                                background=bglblue)
-        self.filtermenu.grid(row=1, column=0, padx=5, pady=5, sticky="nsew")
-        self.pasturmenu = tk.OptionMenu(barnFrame,self.pasturVal,*self.pasturOpt)
-        self.pasturmenu.config( width=int((mainwidth-tablwidth)*0.060),
-                                background=bglblue)
-        self.pasturmenu.grid(row=2, column=0, padx=5, pady=5, sticky="nsew")
+                            font=self.pt16B)
+        barnTitle.grid(row=0, column=0, pady=5, padx=5)
+        filtermenu = tk.OptionMenu(barnFrame,self.filterVar,*self.audiofilters.keys())
+        filtermenu.config( width=int((mainwidth-tablwidth)*0.060),background=bglblue)
+        filtermenu.grid(row=1, column=0, padx=5, pady=5, sticky="nsew")
+        pasturmenu = tk.OptionMenu(barnFrame,self.pasturVal,*self.pasturOpt)
+        pasturmenu.config( width=int((mainwidth-tablwidth)*0.060),background=bglblue)
+        pasturmenu.grid(row=2, column=0, padx=5, pady=5, sticky="nsew")
+        lineFrame = tk.Frame(barnFrame,height=1,width=50,bg=bggrey)
+        lineFrame.grid(row=3, column=0, padx=5, pady=5, sticky="nsew")
+        barnTitle = tk.Label(barnFrame, text="Brand Tools", fg=fgblue, bg=bgblue,
+                            font=self.pt16B)
+        barnTitle.grid(row=4, column=0, pady=5, padx=5)
+        brandmenu = tk.OptionMenu(barnFrame,self.brandVal,*self.audiofilters)
+        brandmenu.config( width=int((mainwidth-tablwidth)*0.060),background=bglblue)
+        brandmenu.grid(row=5, column=0, padx=5, pady=5, sticky="nsew")
         
         # Generate Drive Frame Information
         drivTitle = tk.Label(drivFrame, text="Drive Tools", fg=fggrey, bg=bggrey,
-                            font=self.pt11B)
-        drivTitle.grid(row=0, column=0, pady=5, padx=50, columnspan=2)
-        updtBtn = tk.Button(drivFrame, text="Call Home", bg=bglblue, command=donothing)
-        sendBtn = tk.Button(drivFrame, text="Drive Out", bg=bglblue, command=donothing)
-        frmtBtn = tk.Button(drivFrame, text="Train Drive", bg=bglblue, command=donothing)
+                            font=self.pt16B)
+        drivTitle.grid(row=0, column=0, pady=5, padx=5, columnspan=2)
+        updtBtn = tk.Button(drivFrame, text="Unload Drive", bg=bglblue,
+                            command=self.open_from_drive)
+        sendBtn = tk.Button(drivFrame, text="Load Drive", bg=bglblue, command=donothing)
+        frmtBtn = tk.Button(drivFrame, text="Train (Format) Drive",
+                            bg=bglblue, command=self.formatDrive)
+        drivmenu = tk.OptionMenu(drivFrame,self.driveVal,*self.availDrives.keys())
+        drivmenu.config( width=int((mainwidth-tablwidth)*0.060),background=bglblue)
         updtBtn.grid(row=1, column=0, padx=5, pady=5, sticky="nsew")
         sendBtn.grid(row=1, column=1, padx=5, pady=5, sticky="nsew")
         frmtBtn.grid(row=2, column=0, padx=5, pady=5, columnspan=2, sticky="nsew")
+        drivmenu.grid(row=3, column=0, padx=5, pady=5, columnspan=2, sticky="nsew")
         
     def quit(self, event):
         sys.exit(0)
@@ -265,6 +288,60 @@ class App(tk.Tk):
         # Set "After" Callback
         self.after(50,self.update)
     
+    def scanDrives(self):
+        # Find Available Drives and Names
+        strComputer = "." 
+        objWMIService = win32com.client.Dispatch("WbemScripting.SWbemLocator")
+        objSWbemServices = objWMIService.ConnectServer(strComputer,"root\cimv2")
+        colItems = objSWbemServices.ExecQuery("Select * from Win32_LogicalDisk")
+        # Iteratively Identify Drive Number and Label
+        self.availDrives = {}
+        for objItem in colItems:
+            drvName = objItem.Name
+            volName = objItem.VolumeName
+            drvDesc = objItem.Description
+            # Validate Drive as Potential USB
+            if (drvName != 'C:') and (drvDesc.find('CD') == -1):
+                drvStr = str(drvName) + '  ' + str(volName)
+                self.availDrives[drvStr] = drvName
+                if volName == 'KRNC':
+                    self.driveVal.set(drvStr)
+    
+    def formatDrive(self):
+        # Capture Selected Drive Letter
+        try:
+            curDrive = self.availDrives[ self.driveVal.get() ] + '\\'
+        except:
+            return
+        frmt = 'FAT'
+        name = 'KRNC'
+        # Validate Format Operation
+        permission = tk.messagebox.askquestion("Format Drive",
+                "Formatting will erase all data.\nProceed?",icon='warning',)
+        if permission.lower() == 'yes':
+            # Define Callback Function
+            def fmtCallback(command, modifier, arg):
+                return(1)
+            # Start Format
+            fm = windll.LoadLibrary('fmifs.dll')
+            FMT_CB_FUNC = WINFUNCTYPE(c_int, c_int, c_int, c_void_p)
+            FMIFS_UNKNOWN = 0
+            fm.FormatEx(c_wchar_p(curDrive), FMIFS_UNKNOWN, c_wchar_p(frmt),
+                        c_wchar_p(name), True, c_int(0), FMT_CB_FUNC(fmtCallback))
+        else:
+            self.popupmsg("Drive Format Aborted",button_txt="OK")
+        # Re-Scan Drives
+        self.scanDrives()
+        if permission.lower() == 'yes':
+            drive = self.availDrives[ self.driveVal.get() ]
+            # Create KRNC Music Folder and Branding (Imaging) Path
+            Path( drive + barnpath ).mkdir(parents=True, exist_ok=True)
+            Path( drive + brndpath ).mkdir(parents=True, exist_ok=True)
+            # Generate USBarn File
+            with open(drive+'/'+drivedsc,'w') as t_file:
+                headerstring = ','.join([i['heading'] for i in headers])
+                t_file.write(headerstring+'\n,,\n')
+    
     def gFilt(self,filter):
         # Iteratively Set Filter Column
         for i in range(self.model.getRowCount()):
@@ -308,6 +385,40 @@ class App(tk.Tk):
         # Remove Barn Reference
         self.barn = None
     
+    def open_from_drive(self):
+        # Attempt Loading Barn Description from USB
+        usbarn = self.availDrives[ self.driveVal.get() ] + drivedsc
+        if os.path.isfile(usbarn): # Barn Exists!
+            # Check if Barn Already Loaded
+            if self.barn != None:
+                permission = tk.messagebox.askquestion("Close Barn?",
+                "Opening from USB will close active Barn.\nProceed?",icon='warning',)
+                if permission.lower() != 'yes':
+                    # Abort
+                    self.popupmsg("USBarn Load Aborted",button_txt="OK")
+            # Load Barn
+            self.open_barn(usbarn)
+        else:
+            # No Barn File Found!
+            self.popupmsg("We couldn't find a USBarn description.",width=300,height=75)
+    
+    def validate_barn(self,filepath=''):
+        if filepath == '':
+            filepath = self.barn
+        with open(filepath,'r') as t_file:
+            invalidate = False
+            # Check for a non-empty file and appropriate data
+            i = 0
+            for i, l in enumerate(t_file):
+                l_list = l.split(',')
+                invalidate = invalidate or (len(l_list) != 3)
+            if ((i+1) < 2) or invalidate:
+                self.popupmsg("An error occurred while loading\nthat USBarn description.",
+                              width=300,height=100)
+                self.barn = None
+                return(False)
+            return(True)
+    
     def open_barn(self,barn=''):
         # Open *.barn Song List File
         # Test if passed as argument
@@ -317,12 +428,14 @@ class App(tk.Tk):
             self.barn = tk.filedialog.askopenfilename(  initialdir=stockpath,
                                                         title="Open Barn Roster",
                                                         filetypes=(
-                                                            ("Song Barn",".barn"),
+                                                            ("USBarn Desc.",".barn"),
                                                             ("all files","."),
                                                         )
                                                      )
         # Validate Input
         if self.barn == '':
+            return
+        if not self.validate_barn(self.barn):
             return
         # Input is Valid, Load as CSV, then Reset Table
         self.table.importCSV(filename=self.barn)
@@ -341,7 +454,7 @@ class App(tk.Tk):
             self.barn = tk.filedialog.asksaveasfilename(initialdir=stockpath,
                                                         title="Save Barn Roster",
                                                         filetypes=(
-                                                            ("Song Barn",".barn"),
+                                                            ("USBarn Desc.",".barn"),
                                                             ("all files","."),
                                                         ),
                                                         defaultextension='.barn',
