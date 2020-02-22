@@ -38,11 +38,16 @@ drivedsc = "krncdrive.barn"
 filterpath = utilpath + 'Filters/'
 krncbrandp = utilpath + 'KRNCbranding/'
 
+# Define Branding (Imaging) URL
+brandurl =  ("https://github.com/engineerjoe440/KRNCApps/blob/master/"+
+            "common/branding/KrncBranding.zip?raw=true")
+
 # Required Imports
 import tkinter as tk
 from tkinter.font import Font
 from PIL import Image, ImageTk
 import time, os, sys
+import requests, zipfile
 from functools import partial
 from importlib.util import spec_from_loader, module_from_spec
 from importlib.machinery import SourceFileLoader
@@ -65,7 +70,7 @@ Path(krncbrandp).mkdir(parents=True, exist_ok=True)
 Path(stockpath).mkdir(parents=True, exist_ok=True)
 
 # Import Common Requirements
-from tkinterroutines import Splash, ScrollableFrame
+from tkinterroutines import Splash, LoadingBar
 
 # Define Filter Import Function
 def load_filter_driver(name,path=filterpath):
@@ -157,7 +162,7 @@ class App(tk.Tk):
         self.barnmenu.add_checkbutton( label="Enable KRNC Branding",
                                         command=donothing,var=self.krncbrand)
         self.barnmenu.add_command(  label="Update KRNC Branding",
-                                    command=donothing)
+                                    command=self.update_branding)
         self.aboutmenu.add_command(label="About...", command=self.popupmsg)
         self.menubar.add_cascade(label="File", menu=self.filemenu)
         self.menubar.add_cascade(label="Barn", menu=self.barnmenu)
@@ -347,6 +352,27 @@ class App(tk.Tk):
         for i in range(self.model.getRowCount()):
             self.model.setValueAt(filter,i,1)
         self.table.redraw()
+    
+    def update_branding(self):
+        # Use Requests to Download the Imaging
+        resp = requests.get( brandurl )
+        filepath = krncbrandp+'tempBranding.zip'
+        # Start Loading Bar
+        self.loader = LoadingBar(   text="Fetching Files.",
+                                    width=300,
+                                    height=100,
+                                )
+        # Store Zipped File
+        with open(filepath,'wb') as tempZip:
+            tempZip.write(resp.content)
+        # Extract Zipped Content
+        with zipfile.ZipFile(filepath, 'r') as zip_ref:
+            zip_ref.extractall(krncbrandp)
+        # Delete Zipped Folder
+        os.remove(filepath)
+        time.sleep(2)
+        # Kill Loading Bar
+        self.loader.destroy()
     
     def add_songs(self,songlist=[]):
         # Prompt User to Add Songs

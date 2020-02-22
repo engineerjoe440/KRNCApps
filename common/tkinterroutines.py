@@ -9,8 +9,10 @@ By: Joe Stanley
 
 # Required Imports
 import tkinter as tk
+import tkinter.ttk as ttk
 from PIL import Image, ImageTk
 import time, os, sys
+import threading
 
 # Define Generic Parent-Directory File Retrieval System; EX: `uppath(__file__, 2)`
 uppath = lambda _path, n: os.sep.join(_path.split(os.sep)[:-n])
@@ -99,29 +101,67 @@ class Splash(tk.Toplevel):
 #######################################################################################
 
 #######################################################################################
-# Scrollable Frame Class
-class ScrollableFrame(tk.Frame):
-    def __init__(self, container, width, height, bg, *args, **kwargs):
-        super().__init__(container, *args, **kwargs)
-        canvas = tk.Canvas(self,width=width,height=height,bg=bg)
-        scrollbar = tk.Scrollbar(self, orient="vertical", command=canvas.yview)
-        self.scrollable_frame = tk.Frame(canvas,bg=bg)
-
-        self.scrollable_frame.bind(
-            "<Configure>",
-            lambda e: canvas.configure(
-                scrollregion=canvas.bbox("all")
-            )
-        )
-
-        canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
-
-        canvas.configure(yscrollcommand=scrollbar.set)
-
-        #canvas.pack_propagate(0)
-        #scrollbar.pack_propagate(0)
-        canvas.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side="right", fill="y")
+# Indeterminite Tkinter Loading Bar
+class LoadingBar(tk.Toplevel):
+    # Initialization Method
+    def __init__(self,fg='white',bg='#506c91',width=200,height=100,text=''):
+        self.width = width
+        self.height = height
+        self.text = text
+        self.bg = bg
+        self.fg = fg
+        self.t = threading.Thread()
+        self.t.__init__(target = self.run, args = ())
+        self.t.start()
+    # Center and Update Methods
+    def center(self):
+        self.update_idletasks()
+        width = self.winfo_width()
+        frm_width = self.winfo_rootx() - self.winfo_x()
+        self_width = width + 2 * frm_width
+        height = self.winfo_height()
+        titlebar_height = self.winfo_rooty() - self.winfo_y()
+        self_height = height + titlebar_height + frm_width
+        x = self.winfo_screenwidth() // 2 - self_width // 2
+        y = self.winfo_screenheight() // 2 - self_height // 2
+        self.geometry('{}x{}+{}+{}'.format(width, height, x, y))
+        self.deiconify()
+    def run(self):
+        self.parent = tk.Tk()
+        self.parent.withdraw()
+        tk.Toplevel.__init__(self, self.parent)
+        self.center()
+        self.geometry("{}x{}".format(self.width,self.height))
+        self.configure(background=self.bg)
+        self.overrideredirect(1)
+        self.label = tk.Label(self, text=self.text, bg=self.bg, fg=self.fg)
+        self.rowconfigure(0, weight=15)
+        self.rowconfigure(1, weight=1)
+        self.columnconfigure(0, weight=1)
+        self.label.grid(row=0,column=0,pady=5,padx=5, sticky="nsew")
+        self.progress = ttk.Progressbar(self, orient=tk.HORIZONTAL, length=50,
+                                        mode='indeterminate' )
+        self.progress.grid(row=1,column=0,pady=5,padx=5, sticky="ew")
+        self.t1 = threading.Thread()
+        self.t1.__init__(target = self.progress.start, args = ())
+        self.t1.start()
+        self.parent.mainloop()
+    def stop(self):
+        if self.t1.is_alive() == False:
+            self.progress.stop()
+            self.t1.join()
 #######################################################################################
+
+# Builtin Test
+if __name__ == '__main__':
+    import time
+    # creating tkinter window 
+    root = tk.Tk()
+    LB = LoadingBar()
+    print("waiting 10")
+    time.sleep(10)
+    print("stopnow")
+    LB.stop()
+    root.mainloop()
 
 # END
