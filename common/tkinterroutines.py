@@ -13,6 +13,7 @@ import tkinter.ttk as ttk
 from PIL import Image, ImageTk
 import time, os, sys
 import threading
+from tkintertable import TableCanvas, TableModel
 
 # Define Generic Parent-Directory File Retrieval System; EX: `uppath(__file__, 2)`
 uppath = lambda _path, n: os.sep.join(_path.split(os.sep)[:-n])
@@ -213,6 +214,62 @@ class BlockLoadingBar(tk.Toplevel):
             self.gprogress.stop()
             self.t1.join()
             self.t2.join()
+#######################################################################################
+
+#######################################################################################
+class TableDialog(tk.Toplevel):
+    def __init__(   self,parent,column1,column2,title='',column1txt='',column2txt='',
+                    fg='white',bg='#506c91',tablecellbg='#bdc7e5',tablebg='#c9cdd9',
+                    width=620,height=290,icon=None):
+        self.dataObj = None
+        self.top = tk.Toplevel(parent)
+        self.top.wm_title(title)
+        self.top.configure(background=bg)
+        self.top.geometry("{}x{}".format(width,height))
+        if icon != None:
+            self.top.iconbitmap(icon)
+        self.top.rowconfigure(0,weight=1)
+        tablFrame = tk.Frame(self.top, bg=bg,width=int(width-50),height=height)
+        tablFrame.grid(row=0, column=0,sticky="nsew")
+        tablFrame.columnconfigure(0, weight=1)
+        tablFrame.rowconfigure(0, weight=1)
+        btnFrame = tk.Frame(self.top, bg=bg,width=50,height=height)
+        btnFrame.grid(row=0, column=1,sticky="nsew")
+        btnFrame.columnconfigure(0, weight=1)
+        popmodel = TableModel()
+        poptable = TableCanvas( tablFrame, model=popmodel,cellbackgr=tablecellbg,
+                                rowselectedcolor=bg,rowheight=25,icon=icon,
+                                thefont=('Segoe UI',9),entrybackgr=tablebg,
+                                selectedcolor=tablebg,multipleselectioncolor=tablecellbg,)
+        okBtn = tk.Button(btnFrame,text="OK",bg=tablecellbg)
+        cancelBtn = tk.Button(btnFrame,text="CANCEL",bg=tablecellbg)
+        okBtn['command'] = lambda: self.declare_response(True)
+        cancelBtn['command'] = lambda: self.declare_response(False)
+        okBtn.grid(row=0,column=0,padx=5,pady=5,sticky="ew")
+        cancelBtn.grid(row=1,column=0,padx=5,pady=5,sticky="ew")
+        poptable.show()
+        popmodel.addColumn(column1txt)
+        popmodel.addColumn(column2txt)
+        poptable.resizeColumn(0,250)
+        poptable.resizeColumn(1,250)
+        # Add Empty Rows For Table, Minimum of One Row Required
+        for ROWi in range(max(len(column1),len(column2),1)):
+            popmodel.addRow()
+        # Load Rows with Data
+        for ROWi, entry in enumerate(column1):
+            popmodel.setValueAt(entry,ROWi,1)
+        for ROWi, entry in enumerate(column2):
+            popmodel.setValueAt(entry,ROWi,1)
+        poptable.redraw()
+    
+    def declare_response(self,response=None):
+        self.dataObj = response
+        self.top.destroy()
+    
+    def wait_for_response(self):
+        while self.dataObj not in [True, False]:
+            self.top.update()
+        return(self.dataObj)
 #######################################################################################
 
 # Builtin Test

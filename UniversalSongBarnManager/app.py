@@ -54,7 +54,6 @@ from importlib.machinery import SourceFileLoader
 import win32com.client
 from ctypes import windll, WINFUNCTYPE, c_wchar_p, c_int, c_void_p
 from pathlib import Path
-from tkintertable import TableCanvas, TableModel
 
 # Prepare Path to Accept Common Imports
 curdir = os.getcwd()
@@ -70,7 +69,8 @@ Path(krncbrandp).mkdir(parents=True, exist_ok=True)
 Path(stockpath).mkdir(parents=True, exist_ok=True)
 
 # Import Common Requirements
-from tkinterroutines import Splash, LoadingBar
+from tkinterroutines import Splash, LoadingBar, BlockLoadingBar, TableDialog
+from tkintertable import TableCanvas, TableModel
 
 # Define Filter Import Function
 def load_filter_driver(name,path=filterpath):
@@ -80,9 +80,6 @@ def load_filter_driver(name,path=filterpath):
     spec.loader.exec_module(mod)
     # Return Module Handle
     return(mod)
-
-def donothing():
-   x = 0
 
 class App(tk.Tk):
     def __init__(self):
@@ -138,7 +135,7 @@ class App(tk.Tk):
         self.barnmenu = tk.Menu(self.menubar,tearoff=0)
         self.filtmenu = tk.Menu(self.menubar,tearoff=0)
         self.aboutmenu = tk.Menu(self.menubar,tearoff=0)
-        self.filemenu.add_command(  label="New Barn",  command=donothing,
+        self.filemenu.add_command(  label="New Barn",  command=self.new_barn,
                                     accelerator="Ctrl+N")
         self.filemenu.add_command(  label="Open Barn", command=self.open_barn,
                                     accelerator="Ctrl+O")
@@ -159,8 +156,7 @@ class App(tk.Tk):
                                         command=partial(self.gFilt,filter))
         self.barnmenu.add_cascade(label="Global Filter", menu=self.filtmenu)
         self.barnmenu.add_separator()
-        self.barnmenu.add_checkbutton( label="Enable KRNC Branding",
-                                        command=donothing,var=self.krncbrand)
+        self.barnmenu.add_checkbutton( label="Enable KRNC Branding",var=self.krncbrand)
         self.barnmenu.add_command(  label="Update KRNC Branding",
                                     command=self.update_branding)
         self.aboutmenu.add_command(label="About...", command=self.popupmsg)
@@ -171,6 +167,7 @@ class App(tk.Tk):
         
         # Bind Keys
         self.bind_all("<Control-q>", self.quit)
+        self.bind_all("<Control-n>", self.handle_new)
         self.bind_all("<Control-o>", self.handle_open)
         self.bind_all("<Control-s>", self.handle_save)
         self.bind_all("<Control-S>", self.handle_save_as)
@@ -275,6 +272,8 @@ class App(tk.Tk):
     # Define Handler Functions
     def handle_add(self,event):
         self.add_songs()
+    def handle_new(self,event):
+        self.new_barn()
     def handle_open(self,event):
         self.open_barn()
     def handle_save(self,event):
@@ -408,9 +407,22 @@ class App(tk.Tk):
         # Establish Deltas
         to_be_added = list(set(tab_struct.keys()) - set(usb_struct.keys()))
         to_be_remvd = list(set(usb_struct.keys()) - set(tab_struct.keys()))
+        if max(len(to_be_added),len(to_be_remvd)) == 0:
+            # Abort, No Changes to Make!
+            self.popupmsg(  "USB Drive Load Aborted\nNo Changes Detected.",
+                            button_txt="OK",width=300,height=100)
+            return
         # Create Pop-Up Table Describing Delta
-        self.tablepopup(self,to_be_added,to_be_remvd)
-        
+        dialog = TableDialog(self,to_be_added,to_be_remvd,"USBarn Load - Confirm Load",
+                             "To Be Added","To Be Removed",icon=self.icon)
+        approval = dialog.wait_for_response()
+        # Confirm Approval
+        if not approval:
+            # Abort
+            self.popupmsg(  "USB Drive Load Aborted",button_txt="OK",
+                            width=300,height=100)
+            return
+        # USB Drive Load Approved
     
     def add_songs(self,songlist=[]):
         # Prompt User to Add Songs
@@ -561,54 +573,6 @@ class App(tk.Tk):
         B1.pack(side="bottom")
         popup.mainloop()
     
-    def tablepopup(self,parent,column1,column2):
-        tk.Toplevel.__init__(popup, parent)
-        popup.wm_title("USBarn Load - Confirm Load")
-        popup.configure(background=bgblue)
-        popup.geometry("{}x{}".format(620,290))
-        popup.iconbitmap(self.icon)
-        popup.rowconfigure(0,weight=1)
-        # Define Return Functions
-        def returnTrue():
-            global TableRetVal
-            TableRetVal = True
-            popup.destroy()
-        def returnFalse():
-            global TableRetVal
-            TableRetVal = False
-            popup.destroy()
-        tablFrame = tk.Frame(popup, bg=bgblue,width=tablwidth,height=tablheight)
-        tablFrame.grid(row=0, column=0,sticky="nsew")
-        tablFrame.columnconfigure(0, weight=1)
-        tablFrame.rowconfigure(0, weight=1)
-        btnFrame = tk.Frame(popup, bg=bgblue,width=tablwidth,height=tablheight)
-        btnFrame.grid(row=0, column=1,sticky="nsew")
-        btnFrame.columnconfigure(0, weight=1)
-        popmodel = TableModel()
-        poptable = TableCanvas( tablFrame, model=popmodel,cellbackgr=bglblue,
-                                rowselectedcolor=bgblue,rowheight=25,icon=self.icon,
-                                thefont=('Segoe UI',9),entrybackgr=bggrey,
-                                selectedcolor=bggrey,multipleselectioncolor=bglblue,)
-        okBtn = tk.Button(btnFrame,text="OK",bg=bglblue,command=returnTrue)
-        cancelBtn = tk.Button(btnFrame,text="CANCEL",bg=bglblue,command=returnFalse)
-        okBtn.grid(row=0,column=0,padx=5,pady=5,sticky="ew")
-        cancelBtn.grid(row=1,column=0,padx=5,pady=5,sticky="ew")
-        poptable.show()
-        popmodel.addColumn("To Be Added")
-        popmodel.addColumn("To Be Removed")
-        poptable.resizeColumn(0,250)
-        poptable.resizeColumn(1,250)
-        # Add Empty Rows For Table, Minimum of One Row Required
-        for ROWi in range(max(len(column1),len(column2),1)):
-            popmodel.addRow()
-        # Load Rows with Data
-        for ROWi, entry in enumerate(column1):
-            popmodel.setValueAt(entry,ROWi,1)
-        for ROWi, entry in enumerate(column2):
-            popmodel.setValueAt(entry,ROWi,1)
-        poptable.redraw()
-        popup.mainloop()
-    
     def run(self):
         # Finished Loading, Destroy Splash, Display App
         self.splash.destroy()
@@ -620,12 +584,6 @@ class App(tk.Tk):
 
 if __name__ == "__main__":
     import time
-    data = [[ "Joe", "Stanley"],
-            [ "FOO", "Bar"],
-            [ "Stanley","Solutions"],
-            [ "Another","Test"],
-            [ "Joe", "Stanley"],
-            [ "JoeJoeJoeJoeJoe", "StanleyStanleyStanleyStanley"],]
     app = App()
     time.sleep(2)
     app.run()
