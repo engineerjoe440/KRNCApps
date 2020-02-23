@@ -47,7 +47,7 @@ import tkinter as tk
 from tkinter.font import Font
 from PIL import Image, ImageTk
 import time, os, sys
-import requests, zipfile
+import requests, zipfile, threading
 from functools import partial
 from importlib.util import spec_from_loader, module_from_spec
 from importlib.machinery import SourceFileLoader
@@ -186,7 +186,7 @@ class App(tk.Tk):
                                     rowselectedcolor=bgblue,rowheight=25,
                                     thefont=('Segoe UI',9),entrybackgr=bggrey,
                                     selectedcolor=bggrey,multipleselectioncolor=bglblue,
-                                    icon=imagedir+'/KRNC.ico',)
+                                    icon=self.icon,)
         self.table.show()
         self.model.addRow()
         self.set_columns()
@@ -220,6 +220,12 @@ class App(tk.Tk):
         brandmenu = tk.OptionMenu(barnFrame,self.brandVal,*self.audiofilters)
         brandmenu.config( width=int((mainwidth-tablwidth)*0.060),background=bglblue)
         brandmenu.grid(row=5, column=0, padx=5, pady=5, sticky="nsew")
+        render = Image.open(self.logo)
+        render = render.resize((150,150), Image.ANTIALIAS)
+        photoImg =  ImageTk.PhotoImage(render)
+        brandImag = tk.Label(barnFrame, image=photoImg, bg=bgblue)
+        brandImag.image = photoImg
+        brandImag.grid(row=6, column=0, padx=5, pady=15)
         
         # Generate Drive Frame Information
         drivTitle = tk.Label(drivFrame, text="Drive Tools", fg=fggrey, bg=bggrey,
@@ -227,7 +233,8 @@ class App(tk.Tk):
         drivTitle.grid(row=0, column=0, pady=5, padx=5, columnspan=2)
         updtBtn = tk.Button(drivFrame, text="Unload Drive", bg=bglblue,
                             command=self.open_from_drive)
-        sendBtn = tk.Button(drivFrame, text="Load Drive", bg=bglblue, command=donothing)
+        sendBtn = tk.Button(drivFrame, text="Load Drive", bg=bglblue,
+                            command=self.load_drive)
         frmtBtn = tk.Button(drivFrame, text="Train (Format) Drive",
                             bg=bglblue, command=self.formatDrive)
         drivmenu = tk.OptionMenu(drivFrame,self.driveVal,*self.availDrives.keys())
@@ -334,7 +341,7 @@ class App(tk.Tk):
             fm.FormatEx(c_wchar_p(curDrive), FMIFS_UNKNOWN, c_wchar_p(frmt),
                         c_wchar_p(name), True, c_int(0), FMT_CB_FUNC(fmtCallback))
         else:
-            self.popupmsg("Drive Format Aborted",button_txt="OK")
+            self.popupmsg("Drive Format Aborted",button_txt="OK",height=100,width=200)
         # Re-Scan Drives
         self.scanDrives()
         if permission.lower() == 'yes':
@@ -373,6 +380,37 @@ class App(tk.Tk):
         time.sleep(2)
         # Kill Loading Bar
         self.loader.destroy()
+    
+    def load_drive(self):
+        # Attempt Loading Barn Description from USB
+        usbarn = self.availDrives[ self.driveVal.get() ] + drivedsc
+        if not self.validate_barn( usbarn ):
+            # Invalid Barn
+            self.popupmsg("An error occurred while loading\nthat USBarn description.",
+                            width=300,height=100)
+            return
+        # Barn was validated, read listing
+        usb_struct = {}
+        with open(usbarn,'r') as t_file:
+            t_file.readline()
+            for line in t_file:
+                # Read Structure
+                fpath, filter, pasture = line.split(',')
+                t_struct = {'filter':filter, 'pature':pasture.replace('\n','')}
+                usb_struct[fpath] = t_struct
+        # Read Current Table Information
+        tableStruct = list(self.model.getAllCells().values())
+        tab_struct = {}
+        for row in tableStruct:
+            fpath, filter, pasture = row
+            t_struct = {'filter':filter, 'pature':pasture.replace('\n','')}
+            tab_struct[fpath] = t_struct
+        # Establish Deltas
+        to_be_added = list(set(tab_struct.keys()) - set(usb_struct.keys()))
+        to_be_remvd = list(set(usb_struct.keys()) - set(tab_struct.keys()))
+        # Create Pop-Up Table Describing Delta
+        self.tablepopup(self,to_be_added,to_be_remvd)
+        
     
     def add_songs(self,songlist=[]):
         # Prompt User to Add Songs
@@ -514,13 +552,61 @@ class App(tk.Tk):
         popup.wm_title(title)
         popup.configure(background=bg)
         popup.geometry("{}x{}".format(width,height))
-        popup.iconbitmap(imagedir+'/KRNC.ico')
+        popup.iconbitmap(self.icon)
         label = tk.Label(popup, text=msg, font=self.pt11, bg=bg)
         label.pack(side="top", fill="x", pady=10)
         bFrame = tk.Frame(popup, bg=bg, pady=10)
         bFrame.pack(side="bottom")
         B1 = tk.Button(bFrame, text=button_txt, command = popup.destroy)
         B1.pack(side="bottom")
+        popup.mainloop()
+    
+    def tablepopup(self,parent,column1,column2):
+        tk.Toplevel.__init__(popup, parent)
+        popup.wm_title("USBarn Load - Confirm Load")
+        popup.configure(background=bgblue)
+        popup.geometry("{}x{}".format(620,290))
+        popup.iconbitmap(self.icon)
+        popup.rowconfigure(0,weight=1)
+        # Define Return Functions
+        def returnTrue():
+            global TableRetVal
+            TableRetVal = True
+            popup.destroy()
+        def returnFalse():
+            global TableRetVal
+            TableRetVal = False
+            popup.destroy()
+        tablFrame = tk.Frame(popup, bg=bgblue,width=tablwidth,height=tablheight)
+        tablFrame.grid(row=0, column=0,sticky="nsew")
+        tablFrame.columnconfigure(0, weight=1)
+        tablFrame.rowconfigure(0, weight=1)
+        btnFrame = tk.Frame(popup, bg=bgblue,width=tablwidth,height=tablheight)
+        btnFrame.grid(row=0, column=1,sticky="nsew")
+        btnFrame.columnconfigure(0, weight=1)
+        popmodel = TableModel()
+        poptable = TableCanvas( tablFrame, model=popmodel,cellbackgr=bglblue,
+                                rowselectedcolor=bgblue,rowheight=25,icon=self.icon,
+                                thefont=('Segoe UI',9),entrybackgr=bggrey,
+                                selectedcolor=bggrey,multipleselectioncolor=bglblue,)
+        okBtn = tk.Button(btnFrame,text="OK",bg=bglblue,command=returnTrue)
+        cancelBtn = tk.Button(btnFrame,text="CANCEL",bg=bglblue,command=returnFalse)
+        okBtn.grid(row=0,column=0,padx=5,pady=5,sticky="ew")
+        cancelBtn.grid(row=1,column=0,padx=5,pady=5,sticky="ew")
+        poptable.show()
+        popmodel.addColumn("To Be Added")
+        popmodel.addColumn("To Be Removed")
+        poptable.resizeColumn(0,250)
+        poptable.resizeColumn(1,250)
+        # Add Empty Rows For Table, Minimum of One Row Required
+        for ROWi in range(max(len(column1),len(column2),1)):
+            popmodel.addRow()
+        # Load Rows with Data
+        for ROWi, entry in enumerate(column1):
+            popmodel.setValueAt(entry,ROWi,1)
+        for ROWi, entry in enumerate(column2):
+            popmodel.setValueAt(entry,ROWi,1)
+        poptable.redraw()
         popup.mainloop()
     
     def run(self):

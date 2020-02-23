@@ -152,16 +152,83 @@ class LoadingBar(tk.Toplevel):
             self.t1.join()
 #######################################################################################
 
+#######################################################################################
+# Indeterminite Tkinter Loading Bar
+class BlockLoadingBar(tk.Toplevel):
+    # Initialization Method
+    def __init__(self,fg='white',bg='#506c91',width=200,height=150,text=''):
+        self.width = width
+        self.height = height
+        self.text = text
+        self.bg = bg
+        self.fg = fg
+        self.t = threading.Thread()
+        self.t.__init__(target = self.run, args = ())
+        self.t.start()
+    # Center and Update Methods
+    def center(self):
+        self.update_idletasks()
+        width = self.winfo_width()
+        frm_width = self.winfo_rootx() - self.winfo_x()
+        self_width = width + 2 * frm_width
+        height = self.winfo_height()
+        titlebar_height = self.winfo_rooty() - self.winfo_y()
+        self_height = height + titlebar_height + frm_width
+        x = self.winfo_screenwidth() // 2 - self_width // 2
+        y = self.winfo_screenheight() // 2 - self_height // 2
+        self.geometry('{}x{}+{}+{}'.format(width, height, x, y))
+        self.deiconify()
+    def setValue(self,value):
+        global gProgHandle
+        gProgHandle['value'] = int(value)
+    def run(self):
+        global gProgHandle
+        self.parent = tk.Tk()
+        self.parent.withdraw()
+        tk.Toplevel.__init__(self, self.parent)
+        self.center()
+        self.geometry("{}x{}".format(self.width,self.height))
+        self.configure(background=self.bg)
+        self.overrideredirect(1)
+        self.label = tk.Label(self, text=self.text, bg=self.bg, fg=self.fg)
+        self.rowconfigure(0, weight=15)
+        self.rowconfigure(1, weight=1)
+        self.columnconfigure(0, weight=1)
+        self.label.grid(row=0,column=0,pady=5,padx=5, sticky="nsew")
+        self.progress = ttk.Progressbar(self, orient=tk.HORIZONTAL, length=50,
+                                        mode='indeterminate' )
+        self.gprogress = ttk.Progressbar(self, orient=tk.HORIZONTAL, length=50,
+                                        mode='determinate' )
+        self.progress.grid(row=1,column=0,pady=5,padx=5, sticky="ew")
+        self.gprogress.grid(row=2,column=0,pady=5,padx=5, sticky="ew")
+        gProgHandle = self.gprogress
+        self.t1 = threading.Thread()
+        self.t1.__init__(target = self.progress.start, args = ())
+        self.t1.start()
+        self.gprogress['value'] = 20
+        self.parent.mainloop()
+    def stop(self):
+        if self.t1.is_alive() == False:
+            self.progress.stop()
+            self.gprogress.stop()
+            self.t1.join()
+            self.t2.join()
+#######################################################################################
+
 # Builtin Test
 if __name__ == '__main__':
     import time
     # creating tkinter window 
     root = tk.Tk()
-    LB = LoadingBar()
+    LB = BlockLoadingBar()
     print("waiting 10")
-    time.sleep(10)
+    time.sleep(2)
+    LB.setValue(40)
+    time.sleep(3)
+    LB.setValue(80)
+    time.sleep(5)
     print("stopnow")
-    LB.stop()
+    LB.destroy()
     root.mainloop()
 
 # END
