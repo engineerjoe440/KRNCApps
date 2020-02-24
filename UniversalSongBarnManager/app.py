@@ -81,6 +81,36 @@ def load_filter_driver(name,path=filterpath):
     # Return Module Handle
     return(mod)
 
+# Define Filter Implimentation Function
+def filter_audio(src,dst,filtername,filterslist):
+    # Use `filtername` and `filterlist` to Determine Driver Script
+    # Validate `filtername`
+    if filtername not in filterslist.keys():
+        return(False)
+    # Format src/dst File Paths
+    src = repr(src).replace('\\','')
+    dst = repr(dst).replace('\\','')
+    # Dictionary Structure: {"filtername":<filter_driver>}
+    filter_driver = filterslist[filtername]
+    # Run Filter
+    sta = filter_driver.main(src,dst)
+    return(sta==0)
+
+# Define Branding Loader
+def audio_loader(audio_files,filterslist):
+    # Branding Files List Structure: ["full/path/filename.mp3","filename.mp3"]
+    for ind,(src,struct) in enumerate(audio_files.items()):
+        # Decompose Structure
+        name = struct['name']
+        dstpath = struct['destination']
+        dst = dstpath + '/' + name
+        filtername = struct['filter']
+        # Perform Filter and Load
+        sta = filter_audio( src=src,dst=dst,
+                            filtername=filtername,
+                            filterslist=filterslist)
+        yield(ind,sta,name)
+
 class App(tk.Tk):
     def __init__(self):
         # Initialize App, then Withdraw while loading
@@ -100,6 +130,7 @@ class App(tk.Tk):
         
         # Class Variable Declaration
         self.barn = None
+        self.lastRow = 0
         self.krncbrand = tk.BooleanVar()
         self.filterVar = tk.StringVar()
         self.pasturVal = tk.StringVar()
@@ -288,14 +319,25 @@ class App(tk.Tk):
         ROWi = self.table.getSelectedRow()
         filter = self.model.getValueAt(ROWi,1)
         pasture = self.model.getValueAt(ROWi,2)
-        # Update Filter
-        if (curFilter != "-filter-"):
-            self.model.setValueAt(curFilter,ROWi,1)
-            self.table.redraw()
-        # Update Pasture
-        if (curPastur!="-pasture-") and (pasture!=curPastur):
-            self.model.setValueAt(curPastur,ROWi,2)
-            self.table.redraw()
+        # Validate That Same Row Still Selected
+        if ROWi == self.lastRow:
+            # Update Filter
+            if (curFilter != "-filter-"):
+                self.model.setValueAt(curFilter,ROWi,1)
+                self.table.redraw()
+            # Update Pasture
+            if (curPastur!="-pasture-") and (pasture!=curPastur):
+                self.model.setValueAt(curPastur,ROWi,2)
+                self.table.redraw()
+        else:
+            # Update Filter
+            if (curFilter != "-filter-") and (filter != ''):
+                self.filterVar.set( filter )
+            # Update Pasture
+            if (pasture!=curPastur):
+                self.pasturVal.set( pasture )
+            # Update Check
+            self.lastRow = ROWi
         # Set "After" Callback
         self.after(50,self.update)
     
@@ -352,6 +394,9 @@ class App(tk.Tk):
             with open(drive+'/'+drivedsc,'w') as t_file:
                 headerstring = ','.join([i['heading'] for i in headers])
                 t_file.write(headerstring+'\n,,\n')
+            # Notify Success
+            self.popupmsg(  "Drive Format Complete",title='KRNC',
+                            button_txt="OK",height=100,width=220)
     
     def gFilt(self,filter):
         # Iteratively Set Filter Column
@@ -382,7 +427,8 @@ class App(tk.Tk):
     
     def load_drive(self):
         # Attempt Loading Barn Description from USB
-        usbarn = self.availDrives[ self.driveVal.get() ] + drivedsc
+        driveNm = self.availDrives[ self.driveVal.get() ]
+        usbarn = driveNm + drivedsc
         if not self.validate_barn( usbarn ):
             # Invalid Barn
             self.popupmsg("An error occurred while loading\nthat USBarn description.",
@@ -395,25 +441,47 @@ class App(tk.Tk):
             for line in t_file:
                 # Read Structure
                 fpath, filter, pasture = line.split(',')
-                t_struct = {'filter':filter, 'pature':pasture.replace('\n','')}
+                t_struct = {'filter':filter,
+                            'pasture':pasture.replace('\n',''),
+                            'name':os.path.basename(fpath),}
                 usb_struct[fpath] = t_struct
         # Read Current Table Information
         tableStruct = list(self.model.getAllCells().values())
         tab_struct = {}
         for row in tableStruct:
             fpath, filter, pasture = row
-            t_struct = {'filter':filter, 'pature':pasture.replace('\n','')}
+            t_struct = {'filter':filter,
+                        'pasture':pasture.replace('\n',''),
+                        'destination':driveNm+barnpath,
+                        'name':os.path.basename(fpath),}
             tab_struct[fpath] = t_struct
         # Establish Deltas
         to_be_added = list(set(tab_struct.keys()) - set(usb_struct.keys()))
         to_be_remvd = list(set(usb_struct.keys()) - set(tab_struct.keys()))
+        # Add Files that Must be Filtered or Zipped
+        common_files = list(set(tab_struct.keys()) & set(usb_struct.keys()))
+        for file in common_files:
+            Lstruct = tab_struct[file]
+            Rstruct = usb_struct[file]
+            # Compare Filter
+            if Lstruct['filter'] != Rstruct['filter']:
+                to_be_added.append( file )
+        # Find Pastured Files
+        zip_files = []
+        for Lstruct in tab_struct.values():
+            if Lstruct['pasture'] == 'TRUE':
+                zip_files.append(Lstruct['name'])
+        # Format for Display
+        add_display = [os.path.basename(i) for i in to_be_added]
+        rmv_display = [os.path.basename(i) for i in to_be_remvd]
+        # Validate Changes Exist
         if max(len(to_be_added),len(to_be_remvd)) == 0:
             # Abort, No Changes to Make!
             self.popupmsg(  "USB Drive Load Aborted\nNo Changes Detected.",
                             button_txt="OK",width=300,height=100)
             return
         # Create Pop-Up Table Describing Delta
-        dialog = TableDialog(self,to_be_added,to_be_remvd,"USBarn Load - Confirm Load",
+        dialog = TableDialog(self,add_display,rmv_display,"USBarn Load - Confirm Load",
                              "To Be Added","To Be Removed",icon=self.icon)
         approval = dialog.wait_for_response()
         # Confirm Approval
@@ -422,7 +490,41 @@ class App(tk.Tk):
             self.popupmsg(  "USB Drive Load Aborted",button_txt="OK",
                             width=300,height=100)
             return
-        # USB Drive Load Approved
+        # Build Load Structure
+        load_struct = {}
+        for addObj in to_be_added:
+            load_struct[addObj] = tab_struct[addObj]
+        # Find all Branding to be Loaded (If Allowed)
+        if self.krncbrand.get():
+            # Capture Current Branding Filter
+            brandFilter = self.brandVal.get()
+            # Capture all Branding Files
+            for file in os.listdir(krncbrandp):
+                if file.endswith('.mp3'):
+                    t_struct = {'filter':brandFilter,
+                                'pasture':'FALSE',
+                                'destination':driveNm+brndpath,
+                                'name':file,}
+                    load_struct[os.path.join(krncbrandp,file)] = t_struct
+        # Iteratively Load Audio and Update Loading Bar
+        loader = BlockLoadingBar(text="Filtering and Loading Files")
+        step_size = 100//len(load_struct.keys()) # Determine Progress Bar Step
+        # Wait for Progress Bar to Initialize
+        while True:
+            try:
+                loader.setValue(step_size)
+                break
+            except:
+                continue
+        # Iteratively Filter and Load Audio onto Drive
+        for i in audio_loader(load_struct, self.audiofilters):
+            loader.setValue(loader.getValue()+step_size)
+        loader.destroy() # Kill Loading Bar
+        
+        # Prepare to Store *.barn Description on USB
+        preBarn = self.barn
+        self.save_barn_as( usbarn )
+        self.barn = preBarn
     
     def add_songs(self,songlist=[]):
         # Prompt User to Add Songs
@@ -441,13 +543,17 @@ class App(tk.Tk):
         if songlist == []:
             return
         # Remove Dummy Row if No Barn Declared
-        if (self.barn == None) and (self.model.getRowCount() == 1):
+        if (self.barn == None) and (self.model.getValueAt(0,0) == ''):
             self.model.deleteRows()
-        # Add new Rows to Table
+        # Add Column Titles
         filekwarg = headers[0]['heading']
         lockkwarg = headers[2]['heading']
+        # Clear Filter and Pasture Information
+        self.filterVar.set('')
+        self.pasturVal.set('FALSE')
+        # Add New Rows with Path and Pasture Information
         for song in songlist:
-            self.table.addRow(key=None,**{filekwarg:song,lockkwarg:'false'})
+            self.table.addRow(key=None,**{filekwarg:song,lockkwarg:'FALSE'})
     
     def empty_barn(self):
         # Clear Table by Deleting Rows

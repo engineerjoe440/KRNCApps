@@ -18,6 +18,8 @@ from tkintertable import TableCanvas, TableModel
 # Define Generic Parent-Directory File Retrieval System; EX: `uppath(__file__, 2)`
 uppath = lambda _path, n: os.sep.join(_path.split(os.sep)[:-n])
 
+# Declare Space for Progress Handle
+gProgHandle = None
 
 #######################################################################################
 # Splash Screen Class
@@ -182,6 +184,9 @@ class BlockLoadingBar(tk.Toplevel):
     def setValue(self,value):
         global gProgHandle
         gProgHandle['value'] = int(value)
+    def getValue(self):
+        global gProgHandle
+        return(gProgHandle['value'])
     def run(self):
         global gProgHandle
         self.parent = tk.Tk()
@@ -239,7 +244,7 @@ class TableDialog(tk.Toplevel):
         popmodel = TableModel()
         poptable = TableCanvas( tablFrame, model=popmodel,cellbackgr=tablecellbg,
                                 rowselectedcolor=bg,rowheight=25,icon=icon,
-                                thefont=('Segoe UI',9),entrybackgr=tablebg,
+                                thefont=('Segoe UI',8),entrybackgr=tablebg,
                                 selectedcolor=tablebg,multipleselectioncolor=tablecellbg,)
         okBtn = tk.Button(btnFrame,text="OK",bg=tablecellbg)
         cancelBtn = tk.Button(btnFrame,text="CANCEL",bg=tablecellbg)
@@ -257,7 +262,7 @@ class TableDialog(tk.Toplevel):
             popmodel.addRow()
         # Load Rows with Data
         for ROWi, entry in enumerate(column1):
-            popmodel.setValueAt(entry,ROWi,1)
+            popmodel.setValueAt(entry,ROWi,0)
         for ROWi, entry in enumerate(column2):
             popmodel.setValueAt(entry,ROWi,1)
         poptable.redraw()
