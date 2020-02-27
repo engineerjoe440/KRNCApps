@@ -97,19 +97,39 @@ def filter_audio(src,dst,filtername,filterslist):
     return(sta==0)
 
 # Define Branding Loader
+load_done = False
 def audio_loader(audio_files,filterslist):
-    # Branding Files List Structure: ["full/path/filename.mp3","filename.mp3"]
-    for ind,(src,struct) in enumerate(audio_files.items()):
-        # Decompose Structure
-        name = struct['name']
-        dstpath = struct['destination']
-        dst = dstpath + '/' + name
-        filtername = struct['filter']
-        # Perform Filter and Load
-        sta = filter_audio( src=src,dst=dst,
-                            filtername=filtername,
-                            filterslist=filterslist)
-        yield(ind,sta,name)
+    global load_done
+    # Internal Iterative Loader
+    def  internal_loader(audio_files,filterslist):
+        # Branding Files List Structure: ["full/path/filename.mp3","filename.mp3"]
+        for ind,(src,struct) in enumerate(audio_files.items()):
+            # Decompose Structure
+            name = struct['name']
+            dstpath = struct['destination']
+            dst = dstpath + '/' + name
+            filtername = struct['filter']
+            # Perform Filter and Load
+            sta = filter_audio( src=src,dst=dst,
+                                filtername=filtername,
+                                filterslist=filterslist)
+            yield(ind,sta,name)
+    # Iteratively Load Audio and Update Loading Bar
+    loader = BlockLoadingBar(text="Filtering and Loading Files")
+    step_size = int(min(80,100/len(audio_files.keys()))) # Determine Progress Bar Step
+    # Wait for Progress Bar to Initialize
+    while True:
+        try:
+            loader.setValue(step_size)
+            break
+        except:
+            continue
+    # Iteratively Filter and Load Audio onto Drive
+    for i in internal_loader(audio_files, filterslist):
+        loader.setValue(loader.getValue()+step_size)
+    loader.destroy() # Kill Loading Bar
+    # Indicate Completion
+    load_done = True
 
 class App(tk.Tk):
     def __init__(self):
@@ -312,7 +332,7 @@ class App(tk.Tk):
     def handle_save_as(self,event):
         self.save_barn_as()
     
-    def update(self):
+    def _update(self):
         # Capture Current Information
         curFilter = self.filterVar.get()
         curPastur = self.pasturVal.get()
@@ -339,7 +359,7 @@ class App(tk.Tk):
             # Update Check
             self.lastRow = ROWi
         # Set "After" Callback
-        self.after(50,self.update)
+        self.after(50,self._update)
     
     def scanDrives(self):
         # Find Available Drives and Names
@@ -403,6 +423,7 @@ class App(tk.Tk):
         for i in range(self.model.getRowCount()):
             self.model.setValueAt(filter,i,1)
         self.table.redraw()
+        self.lastRow = -1 # Force Update
     
     def update_branding(self):
         # Use Requests to Download the Imaging
@@ -455,6 +476,10 @@ class App(tk.Tk):
                         'destination':driveNm+barnpath,
                         'name':os.path.basename(fpath),}
             tab_struct[fpath] = t_struct
+        # Delete Branding
+        for file in  os.listdir( driveNm+brndpath ):
+            # If file isn't in listing, delete it
+            os.remove( os.path.join( driveNm+brndpath, file ) )
         # Establish Deltas
         to_be_added = list(set(tab_struct.keys()) - set(usb_struct.keys()))
         to_be_remvd = list(set(usb_struct.keys()) - set(tab_struct.keys()))
@@ -468,14 +493,18 @@ class App(tk.Tk):
                 to_be_added.append( file )
         # Find Pastured Files
         zip_files = []
+        uzip_files = []
         for Lstruct in tab_struct.values():
             if Lstruct['pasture'] == 'TRUE':
                 zip_files.append(Lstruct['name'])
+        for Lstruct,Rstruct in zip(tab_struct.values(),usb_struct.values()):
+            if (Lstruct['pasture'] == 'FALSE') and (Rstruct['pasture'] == 'TRUE'):
+                uzip_files.append(Lstruct['name'])
         # Format for Display
         add_display = [os.path.basename(i) for i in to_be_added]
         rmv_display = [os.path.basename(i) for i in to_be_remvd]
         # Validate Changes Exist
-        if max(len(to_be_added),len(to_be_remvd)) == 0:
+        if max(len(to_be_added),len(to_be_remvd),len(zip_files),len(uzip_files)) == 0:
             # Abort, No Changes to Make!
             self.popupmsg(  "USB Drive Load Aborted\nNo Changes Detected.",
                             button_txt="OK",width=300,height=100)
@@ -506,21 +535,38 @@ class App(tk.Tk):
                                 'destination':driveNm+brndpath,
                                 'name':file,}
                     load_struct[os.path.join(krncbrandp,file)] = t_struct
-        # Iteratively Load Audio and Update Loading Bar
-        loader = BlockLoadingBar(text="Filtering and Loading Files")
-        step_size = 100//len(load_struct.keys()) # Determine Progress Bar Step
-        # Wait for Progress Bar to Initialize
-        while True:
-            try:
-                loader.setValue(step_size)
-                break
-            except:
+        # Start Loading Thread
+        if not max(len(to_be_added),len(to_be_remvd)) == 0:
+            t = threading.Thread(target=audio_loader,args=(load_struct,self.audiofilters))
+            t.start()
+            global load_done
+            load_done = False
+            while not load_done:
+                self.update()
+            load_done = False
+        # Delete Files not in Barn Listings
+        names = [struct['name'] for struct in tab_struct.values()]
+        for file in  os.listdir( driveNm+barnpath ):
+            # Skip Zipped File
+            if file.endswith('.zip'):
                 continue
-        # Iteratively Filter and Load Audio onto Drive
-        for i in audio_loader(load_struct, self.audiofilters):
-            loader.setValue(loader.getValue()+step_size)
-        loader.destroy() # Kill Loading Bar
-        
+            # If file isn't in listing, delete it
+            if not file in names:
+                os.remove( os.path.join( driveNm+barnpath, file ) )
+        # Extract Songs from Pasture
+        try:
+            with zipfile.ZipFile(driveNm+barnpath+'/pasture.zip', 'r') as zipf:
+                for file in uzip_files:
+                    extr_path = (barnpath+'/'+file)[1:]
+                    zipf.extract(extr_path,driveNm)
+        except:
+            pass
+        # Put songs out to Pasture by Zipping their Files
+        with zipfile.ZipFile(driveNm+barnpath+'/pasture.zip', 'w') as zipf:
+            for file in zip_files:
+                zipf.write(  os.path.join(driveNm+barnpath,file),
+                            compress_type=zipfile.ZIP_DEFLATED )
+                os.remove( os.path.join(driveNm+barnpath,file) )
         # Prepare to Store *.barn Description on USB
         preBarn = self.barn
         self.save_barn_as( usbarn )
@@ -569,7 +615,11 @@ class App(tk.Tk):
     
     def open_from_drive(self):
         # Attempt Loading Barn Description from USB
-        usbarn = self.availDrives[ self.driveVal.get() ] + drivedsc
+        try:
+            usbarn = self.availDrives[ self.driveVal.get() ] + drivedsc
+        except:
+            self.scanDrives()
+            self.popupmsg("No Drive Selected.",button_txt="OK",width=300,height=75)
         if os.path.isfile(usbarn): # Barn Exists!
             # Check if Barn Already Loaded
             if self.barn != None:
@@ -685,7 +735,7 @@ class App(tk.Tk):
         self.deiconify()
         self.center()
         # Run Main Loop
-        self.after(50,self.update)
+        self.after(50,self._update)
         self.mainloop()
 
 if __name__ == "__main__":
