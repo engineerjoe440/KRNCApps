@@ -61,6 +61,9 @@ parentdir = '/'.join( curdir.split('\\')[:-1] )
 sys.path.append(parentdir + '/common')
 imagedir = parentdir + '/common/images'
 
+# Add SoX to Path
+sys.path.append("C:\\Program Files (x86)\\StanleySolutions\\KRNC\\USBManager\\SoX")
+
 # Create Local Paths if Nonexistant
 stockpath = stockpath.format(os.getlogin())
 musicpath = musicpath.format(os.getlogin())

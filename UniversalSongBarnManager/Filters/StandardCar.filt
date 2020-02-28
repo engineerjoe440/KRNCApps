@@ -1,0 +1,31 @@
+# Test SoX Audio Editing Script
+import subprocess
+
+# Define Main Function
+def main(infile,outfile):
+    # Define Effect
+    effect = "compand 0.3,1 6:−70,−60,−20 −5 −90 0.2".split(' ')
+    # Format File Paths
+    infile = infile.replace('"','')
+    outfile = outfile.replace('"','')
+    if infile.startswith('\''):
+        infile = infile[1:]
+    if outfile.startswith('\''):
+        outfile = outfile[1:]
+    if infile.endswith('\''):
+        infile = infile[:-1]
+    if outfile.endswith('\''):
+        outfile = outfile[:-1]
+    # Build full Command List
+    cmd = ['sox', infile, outfile, *effect]
+    print(cmd)
+    # Run Subprocess
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    p.wait()
+    return(p.returncode)
+
+if __name__ == '__main__':
+    # Test Locally!
+    infile = 'C:/ProgramData/StanleySolutions/KRNC/USBManager/KRNCbranding/We\'ve Corralled Every Genre.mp3'
+    outfile= 'deleteme.mp3'
+    print(main(infile,outfile))
