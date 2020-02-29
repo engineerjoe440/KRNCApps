@@ -151,6 +151,8 @@ class App(tk.Tk):
         # Class Variable Declaration
         self.barn = None
         self.lastRow = 0
+        self.musicpath = musicpath
+        self.blockupdate = False
         self.krncbrand = tk.BooleanVar()
         self.filterVar = tk.StringVar()
         self.pasturVal = tk.StringVar()
@@ -237,7 +239,7 @@ class App(tk.Tk):
                                     icon=self.icon,)
         self.table.show()
         self.model.addRow()
-        self.set_columns()
+        self.set_columns(init=True)
         
         # Generate Options Sections
         optsFrame = tk.Frame(self, bg=bgblue, height=tablheight)
@@ -309,15 +311,15 @@ class App(tk.Tk):
         self.geometry('{}x{}+{}+{}'.format(width, height, x, y))
         self.deiconify()
     
-    def set_columns(self):
+    def set_columns(self,init=False):
         # Format Columns as Necessary
         for c,column in enumerate(headers):
             name    = column['heading']
             ctype   = column['type']
             width   = column['width']
-            self.model.addColumn(colname=name,coltype=ctype)
+            if init: self.model.addColumn(colname=name,coltype=ctype)
             self.table.resizeColumn(c,width)
-            self.model.setValueAt('',0,c)
+            if init: self.model.setValueAt('',0,c)
         self.table.redraw()
     
     # Define Handler Functions
@@ -333,31 +335,32 @@ class App(tk.Tk):
         self.save_barn_as()
     
     def _update(self):
-        # Capture Current Information
-        curFilter = self.filterVar.get()
-        curPastur = self.pasturVal.get()
-        ROWi = self.table.getSelectedRow()
-        filter = self.model.getValueAt(ROWi,1)
-        pasture = self.model.getValueAt(ROWi,2)
-        # Validate That Same Row Still Selected
-        if ROWi == self.lastRow:
-            # Update Filter
-            if (curFilter != "-filter-"):
-                self.model.setValueAt(curFilter,ROWi,1)
-                self.table.redraw()
-            # Update Pasture
-            if (curPastur!="-pasture-") and (pasture!=curPastur):
-                self.model.setValueAt(curPastur,ROWi,2)
-                self.table.redraw()
-        else:
-            # Update Filter
-            if (curFilter != "-filter-") and (filter != ''):
-                self.filterVar.set( filter )
-            # Update Pasture
-            if (pasture!=curPastur):
-                self.pasturVal.set( pasture )
-            # Update Check
-            self.lastRow = ROWi
+        if not self.blockupdate:
+            # Capture Current Information
+            curFilter = self.filterVar.get()
+            curPastur = self.pasturVal.get()
+            ROWi = self.table.getSelectedRow()
+            filter = self.model.getValueAt(ROWi,1)
+            pasture = self.model.getValueAt(ROWi,2)
+            # Validate That Same Row Still Selected
+            if ROWi == self.lastRow:
+                # Update Filter
+                if (curFilter != "-filter-"):
+                    self.model.setValueAt(curFilter,ROWi,1)
+                    self.table.redraw()
+                # Update Pasture
+                if (curPastur!="-pasture-") and (pasture!=curPastur):
+                    self.model.setValueAt(curPastur,ROWi,2)
+                    self.table.redraw()
+            else:
+                # Update Filter
+                if (curFilter != "-filter-") and (filter != ''):
+                    self.filterVar.set( filter )
+                # Update Pasture
+                if (pasture!=curPastur):
+                    self.pasturVal.set( pasture )
+                # Update Check
+                self.lastRow = ROWi
         # Set "After" Callback
         self.after(50,self._update)
     
@@ -576,7 +579,7 @@ class App(tk.Tk):
         # Prompt User to Add Songs
         if songlist == []:
             songlist = tk.filedialog.askopenfilenames(  parent=self,
-                                                        initialdir=musicpath,
+                                                        initialdir=self.musicpath,
                                                         title="Add Stock to Barn",
                                                         filetypes=(
                                                             ("audio files",
@@ -599,6 +602,7 @@ class App(tk.Tk):
         self.pasturVal.set('FALSE')
         # Add New Rows with Path and Pasture Information
         for song in songlist:
+            self.musicpath = os.path.dirname(song)
             self.table.addRow(key=None,**{filekwarg:song,lockkwarg:'FALSE'})
     
     def empty_barn(self):
