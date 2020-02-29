@@ -45,21 +45,18 @@ brandurl =  ("https://github.com/engineerjoe440/KRNCApps/blob/master/"+
 # Required Imports
 import tkinter as tk
 from tkinter.font import Font
-from PIL import Image, ImageTk
+from lib.PIL import Image, ImageTk
 import time, os, sys
-import requests, zipfile, threading
+import lib.requests, zipfile, threading
 from functools import partial
 from importlib.util import spec_from_loader, module_from_spec
 from importlib.machinery import SourceFileLoader
-import win32com.client
+import lib.win32com.client as win32com
 from ctypes import windll, WINFUNCTYPE, c_wchar_p, c_int, c_void_p
 from pathlib import Path
 
-# Prepare Path to Accept Common Imports
-curdir = os.getcwd()
-parentdir = '/'.join( curdir.split('\\')[:-1] )
-sys.path.append(parentdir + '/common')
-imagedir = parentdir + '/common/images'
+# Define Image Path
+imagedir = 'images'
 
 # Add SoX to Path
 sys.path.append("C:\\Program Files (x86)\\StanleySolutions\\KRNC\\USBManager\\SoX")
@@ -72,8 +69,8 @@ Path(krncbrandp).mkdir(parents=True, exist_ok=True)
 Path(stockpath).mkdir(parents=True, exist_ok=True)
 
 # Import Common Requirements
-from tkinterroutines import Splash, LoadingBar, BlockLoadingBar, TableDialog
-from tkintertable import TableCanvas, TableModel
+from lib.tkinterroutines import Splash, LoadingBar, BlockLoadingBar, TableDialog
+from lib.tkintertable import TableCanvas, TableModel
 
 # Define Filter Import Function
 def load_filter_driver(name,path=filterpath):
@@ -367,7 +364,7 @@ class App(tk.Tk):
     def scanDrives(self):
         # Find Available Drives and Names
         strComputer = "." 
-        objWMIService = win32com.client.Dispatch("WbemScripting.SWbemLocator")
+        objWMIService = win32com.Dispatch("WbemScripting.SWbemLocator")
         objSWbemServices = objWMIService.ConnectServer(strComputer,"root\cimv2")
         colItems = objSWbemServices.ExecQuery("Select * from Win32_LogicalDisk")
         # Iteratively Identify Drive Number and Label

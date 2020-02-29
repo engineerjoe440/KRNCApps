@@ -15,17 +15,12 @@ def version():
 
 # Required Imports
 import tkinter as tk
-from PIL import Image, ImageTk
+from lib.PIL import Image, ImageTk
 import time, os, sys
 from pathlib import Path
 
-# Prepare Path to Accept Common Imports
-curdir = os.getcwd()
-parentdir = '/'.join( curdir.split('\\')[:-1] )
-sys.path.append(parentdir + '/common')
-
 # Import Common Requirements
-from tkinterroutines import Splash
+from lib.tkinterroutines import Splash
 
 # Import Local Requirements
 from app import App
