@@ -48,6 +48,7 @@ from tkinter.font import Font
 from lib.PIL import Image, ImageTk
 import time, os, sys
 import lib.requests, zipfile, threading
+from multiprocessing import Pool
 from functools import partial
 from importlib.util import spec_from_loader, module_from_spec
 from importlib.machinery import SourceFileLoader
@@ -57,9 +58,6 @@ from pathlib import Path
 
 # Define Image Path
 imagedir = 'images'
-
-# Add SoX to Path
-sys.path.append("C:\\Program Files (x86)\\StanleySolutions\\KRNC\\USBManager\\SoX")
 
 # Create Local Paths if Nonexistant
 stockpath = stockpath.format(os.getlogin())
@@ -75,6 +73,8 @@ from lib.tkintertable import TableCanvas, TableModel
 # Define Filter Import Function
 def load_filter_driver(name,path=filterpath):
     # Load Module
+    if not name.endswith('.filt'):
+        name += '.filt'
     spec = spec_from_loader(name, SourceFileLoader(name, path+name))
     mod = module_from_spec(spec)
     spec.loader.exec_module(mod)
@@ -82,38 +82,32 @@ def load_filter_driver(name,path=filterpath):
     return(mod)
 
 # Define Filter Implimentation Function
-def filter_audio(src,dst,filtername,filterslist):
+def filter_audio(inputs):
     # Use `filtername` and `filterlist` to Determine Driver Script
-    # Validate `filtername`
-    if filtername not in filterslist.keys():
-        return(False)
+    src,dst,filtername = inputs
     # Format src/dst File Paths
     src = repr(src).replace('\\','')
     dst = repr(dst).replace('\\','')
     # Dictionary Structure: {"filtername":<filter_driver>}
-    filter_driver = filterslist[filtername]
+    filter_driver = load_filter_driver(filtername)
     # Run Filter
     sta = filter_driver.main(src,dst)
-    return(sta==0)
 
 # Define Branding Loader
 load_done = False
-def audio_loader(audio_files,filterslist):
-    global load_done
-    # Internal Iterative Loader
-    def  internal_loader(audio_files,filterslist):
-        # Branding Files List Structure: ["full/path/filename.mp3","filename.mp3"]
-        for ind,(src,struct) in enumerate(audio_files.items()):
-            # Decompose Structure
-            name = struct['name']
-            dstpath = struct['destination']
-            dst = dstpath + '/' + name
-            filtername = struct['filter']
-            # Perform Filter and Load
-            sta = filter_audio( src=src,dst=dst,
-                                filtername=filtername,
-                                filterslist=filterslist)
-            yield(ind,sta,name)
+load_stat = 0
+def audio_loader(audio_files,in_filterslist):
+    global load_done, load_stat
+    dataset = []
+    # Branding Files List Structure: ["full/path/filename.mp3","filename.mp3"]
+    for src,struct in audio_files.items():
+        # Decompose Structure
+        name = struct['name']
+        dstpath = struct['destination']
+        dst = dstpath + '/' + name
+        filtername = struct['filter']
+        # Generate Dataset List
+        dataset.append([src,dst,filtername])
     # Iteratively Load Audio and Update Loading Bar
     loader = BlockLoadingBar(text="Filtering and Loading Files")
     step_size = int(min(80,100/len(audio_files.keys()))) # Determine Progress Bar Step
@@ -125,8 +119,9 @@ def audio_loader(audio_files,filterslist):
         except:
             continue
     # Iteratively Filter and Load Audio onto Drive
-    for i in internal_loader(audio_files, filterslist):
-        loader.setValue(loader.getValue()+step_size)
+    with Pool(5) as pool:
+        for x in pool.imap_unordered(filter_audio,dataset):
+            loader.setValue( loader.getValue() + step_size )
     loader.destroy() # Kill Loading Bar
     # Indicate Completion
     load_done = True
@@ -162,7 +157,7 @@ class App(tk.Tk):
         self.filterVar.set("-filter-")
         self.pasturVal.set("-pasture-")
         self.driveVal.set("-usb-drive-")
-        self.brandVal.set("-filter-")
+        self.brandVal.set("StandardCar")
         self.pasturOpt = ['FALSE','TRUE']
         # Find Filter Driver Files (Masked Python Files)
         self.audiofilters = {}
@@ -201,6 +196,7 @@ class App(tk.Tk):
         self.barnmenu.add_command( label="Add Song(s) to Barn",accelerator="Ctrl+A",
                                     command=self.add_songs)
         self.barnmenu.add_command( label="Empty Barn",command=self.empty_barn)
+        self.barnmenu.add_command( label="Remove Selected",command=self.delete_selcted)
         self.barnmenu.add_separator()
         # Iteratively Generate Filter Submenu
         for filter in self.audiofilters.keys():
@@ -218,14 +214,6 @@ class App(tk.Tk):
         self.menubar.add_cascade(label="Help", menu=self.aboutmenu)
         self.config(menu=self.menubar)
         
-        # Bind Keys
-        self.bind_all("<Control-q>", self.quit)
-        self.bind_all("<Control-n>", self.handle_new)
-        self.bind_all("<Control-o>", self.handle_open)
-        self.bind_all("<Control-s>", self.handle_save)
-        self.bind_all("<Control-S>", self.handle_save_as)
-        self.bind_all("<Control-a>", self.handle_add)
-        
         # Generate Table Section
         self.tablFrame = tk.Frame(self, bg=bgblue,width=tablwidth,height=tablheight)
         self.tablFrame.grid(row=0, column=1,sticky="nsew")
@@ -236,10 +224,19 @@ class App(tk.Tk):
                                     rowselectedcolor=bgblue,rowheight=25,
                                     thefont=('Segoe UI',9),entrybackgr=bggrey,
                                     selectedcolor=bggrey,multipleselectioncolor=bglblue,
-                                    icon=self.icon,)
+                                    icon=self.icon,read_only=True,)
         self.table.show()
         self.model.addRow()
         self.set_columns(init=True)
+        
+        # Bind Keys
+        self.bind_all("<Control-q>", self.quit)
+        self.bind_all("<Control-n>", self.handle_new)
+        self.bind_all("<Control-o>", self.handle_open)
+        self.bind_all("<Control-s>", self.handle_save)
+        self.bind_all("<Control-S>", self.handle_save_as)
+        self.bind_all("<Control-a>", self.handle_add)
+        self.bind_all("<Delete>",    self.handle_del)
         
         # Generate Options Sections
         optsFrame = tk.Frame(self, bg=bgblue, height=tablheight)
@@ -325,6 +322,8 @@ class App(tk.Tk):
     # Define Handler Functions
     def handle_add(self,event):
         self.add_songs()
+    def handle_del(self,event):
+        self.delete_selcted()
     def handle_new(self,event):
         self.new_barn()
     def handle_open(self,event):
@@ -336,31 +335,34 @@ class App(tk.Tk):
     
     def _update(self):
         if not self.blockupdate:
-            # Capture Current Information
-            curFilter = self.filterVar.get()
-            curPastur = self.pasturVal.get()
-            ROWi = self.table.getSelectedRow()
-            filter = self.model.getValueAt(ROWi,1)
-            pasture = self.model.getValueAt(ROWi,2)
-            # Validate That Same Row Still Selected
-            if ROWi == self.lastRow:
-                # Update Filter
-                if (curFilter != "-filter-"):
-                    self.model.setValueAt(curFilter,ROWi,1)
-                    self.table.redraw()
-                # Update Pasture
-                if (curPastur!="-pasture-") and (pasture!=curPastur):
-                    self.model.setValueAt(curPastur,ROWi,2)
-                    self.table.redraw()
-            else:
-                # Update Filter
-                if (curFilter != "-filter-") and (filter != ''):
-                    self.filterVar.set( filter )
-                # Update Pasture
-                if (pasture!=curPastur):
-                    self.pasturVal.set( pasture )
-                # Update Check
-                self.lastRow = ROWi
+            try:
+                # Capture Current Information
+                curFilter = self.filterVar.get()
+                curPastur = self.pasturVal.get()
+                ROWi = self.table.getSelectedRow()
+                filter = self.model.getValueAt(ROWi,1)
+                pasture = self.model.getValueAt(ROWi,2)
+                # Validate That Same Row Still Selected
+                if ROWi == self.lastRow:
+                    # Update Filter
+                    if (curFilter != "-filter-"):
+                        self.model.setValueAt(curFilter,ROWi,1)
+                        self.table.redraw()
+                    # Update Pasture
+                    if (curPastur!="-pasture-") and (pasture!=curPastur):
+                        self.model.setValueAt(curPastur,ROWi,2)
+                        self.table.redraw()
+                else:
+                    # Update Filter
+                    if (curFilter != "-filter-") and (filter != ''):
+                        self.filterVar.set( filter )
+                    # Update Pasture
+                    if (pasture!=curPastur):
+                        self.pasturVal.set( pasture )
+                    # Update Check
+                    self.lastRow = ROWi
+            except:
+                pass
         # Set "After" Callback
         self.after(50,self._update)
     
@@ -575,6 +577,16 @@ class App(tk.Tk):
         self.save_barn_as( usbarn )
         self.barn = preBarn
     
+    def delete_selcted(self):
+        # Delete Selected Row(s)
+        # Start by Getting Selection
+        selectionRecords = self.table.get_selectedRecordNames()
+        # Iteratively Delete
+        for record in selectionRecords:
+            self.model.deleteRow(key=record)
+        # Update Table
+        self.table.redraw()
+    
     def add_songs(self,songlist=[]):
         # Prompt User to Add Songs
         if songlist == []:
@@ -645,12 +657,17 @@ class App(tk.Tk):
             invalidate = False
             # Check for a non-empty file and appropriate data
             i = 0
+            names = []
             for i, l in enumerate(t_file):
                 l_list = l.split(',')
-                invalidate = invalidate or (len(l_list) != 3)
+                if len(l_list) != 3:
+                    invalidate = True
+                    print(len(l_list))
+                    names.append(l_list[0])
             if ((i+1) < 2) or invalidate:
-                self.popupmsg("An error occurred while loading\nthat USBarn description.",
-                              width=300,height=100)
+                self.popupmsg("An error occurred while loading\nthat USBarn description."+
+                              '\nFailed Lines\n'+'\n'.join(names),
+                              width=500,height=150+15*len(names))
                 self.barn = None
                 return(False)
             return(True)
@@ -674,7 +691,7 @@ class App(tk.Tk):
         if not self.validate_barn(self.barn):
             return
         # Input is Valid, Load as CSV, then Reset Table
-        self.table.importCSV(filename=self.barn)
+        self.model.importCSV(filename=self.barn)
         self.set_columns()
     
     def save_barn_as(self,barn=''):

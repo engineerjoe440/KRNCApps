@@ -3,6 +3,8 @@ import subprocess
 
 # Define Main Function
 def main(infile,outfile):
+    # Define SoX Location
+    sox = "C:\\Program Files (x86)\\StanleySolutions\\KRNC\\USBManager\\SoX\\sox.exe"
     # Define Effect
     effect = "gain -n".split(' ')
     # Format File Paths
@@ -17,8 +19,7 @@ def main(infile,outfile):
     if outfile.endswith('\''):
         outfile = outfile[:-1]
     # Build full Command List
-    cmd = ['sox', infile, outfile, *effect]
-    print(cmd)
+    cmd = [sox, infile, outfile, *effect]
     # Run Subprocess
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
     p.wait()
