@@ -93,13 +93,10 @@ def filter_audio(inputs):
     # Run Filter
     sta = filter_driver.main(src,dst)
 
-# Define Branding Loader
-load_done = False
-load_stat = 0
+# Define Audio Loader
 def audio_loader(audio_files,in_filterslist):
-    global load_done, load_stat
     dataset = []
-    # Branding Files List Structure: ["full/path/filename.mp3","filename.mp3"]
+    # Files List Structure: ["full/path/filename.mp3","filename.mp3"]
     for src,struct in audio_files.items():
         # Decompose Structure
         name = struct['name']
@@ -123,8 +120,28 @@ def audio_loader(audio_files,in_filterslist):
         for x in pool.imap_unordered(filter_audio,dataset):
             loader.setValue( loader.getValue() + step_size )
     loader.destroy() # Kill Loading Bar
-    # Indicate Completion
-    load_done = True
+
+# Define Pasture Zip Handler:
+def pasture_zipper(driveName,zip_files,uzip_files):
+    # Perform Operations Required to Zip Files for Pasture
+    driveBarn = driveName+barnpath
+    # Extract Songs from Pasture
+    try:
+        with zipfile.ZipFile(driveBarn+'/pasture.zip', 'r') as zipf:
+            for file in uzip_files:
+                extr_path = (barnpath+'/'+file)[1:]
+                zipf.extract(extr_path,driveName)
+    except:
+        pass
+    # Put songs out to Pasture by Zipping their Files
+    try:
+        with zipfile.ZipFile(driveBarn+'/pasture.zip', 'a') as zipf:
+            for file in zip_files:
+                zipf.write(  os.path.join(driveBarn,file),
+                            compress_type=zipfile.ZIP_DEFLATED )
+                os.remove( os.path.join(driveBarn,file) )
+    except:
+        pass
 
 class App(tk.Tk):
     def __init__(self):
@@ -544,9 +561,7 @@ class App(tk.Tk):
         if not max(len(to_be_added),len(to_be_remvd)) == 0:
             t = threading.Thread(target=audio_loader,args=(load_struct,self.audiofilters))
             t.start()
-            global load_done
-            load_done = False
-            while not load_done:
+            while t.is_alive():
                 self.update()
             load_done = False
         # Delete Files not in Barn Listings
@@ -558,20 +573,11 @@ class App(tk.Tk):
             # If file isn't in listing, delete it
             if not file in names:
                 os.remove( os.path.join( driveNm+barnpath, file ) )
-        # Extract Songs from Pasture
-        try:
-            with zipfile.ZipFile(driveNm+barnpath+'/pasture.zip', 'r') as zipf:
-                for file in uzip_files:
-                    extr_path = (barnpath+'/'+file)[1:]
-                    zipf.extract(extr_path,driveNm)
-        except:
-            pass
-        # Put songs out to Pasture by Zipping their Files
-        with zipfile.ZipFile(driveNm+barnpath+'/pasture.zip', 'w') as zipf:
-            for file in zip_files:
-                zipf.write(  os.path.join(driveNm+barnpath,file),
-                            compress_type=zipfile.ZIP_DEFLATED )
-                os.remove( os.path.join(driveNm+barnpath,file) )
+        # Operate Zipped Resources
+        t = threading.Thread(target=pasture_zipper,args=(driveNm,zip_files,uzip_files))
+        t.start()
+        while t.is_alive():
+            self.update()
         # Prepare to Store *.barn Description on USB
         preBarn = self.barn
         self.save_barn_as( usbarn )
@@ -586,6 +592,10 @@ class App(tk.Tk):
             self.model.deleteRow(key=record)
         # Update Table
         self.table.redraw()
+        # Save and Reload if Possible
+        if self.barn != None:
+            self.save_barn()
+            self.open_barn(self.barn)
     
     def add_songs(self,songlist=[]):
         # Prompt User to Add Songs
