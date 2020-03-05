@@ -185,7 +185,7 @@ class App(tk.Tk):
                 # Generate Look-Up-Dictionary
                 self.audiofilters[file[:-5]] = handle
         # Find Available Drives Ignoring C: and any CD-ROM Drives
-        self.scanDrives()
+        self.scanDrives(firstscan=True)
 
         # Prepare Main App Window
         self.title( "KRNC Universal Song Barn (USB) Manager"+
@@ -301,12 +301,13 @@ class App(tk.Tk):
                             command=self.load_drive)
         frmtBtn = tk.Button(drivFrame, text="Train (Format) Drive",
                             bg=bglblue, command=self.formatDrive)
-        drivmenu = tk.OptionMenu(drivFrame,self.driveVal,*self.availDrives.keys())
-        drivmenu.config( width=int((mainwidth-tablwidth)*0.060),background=bglblue)
+        #print(help(tk.OptionMenu))
+        self.drivmenu = tk.OptionMenu(drivFrame,self.driveVal,*self.availDrives.keys())
+        self.drivmenu.config( width=int((mainwidth-tablwidth)*0.060),background=bglblue)
         updtBtn.grid(row=1, column=0, padx=5, pady=5, sticky="nsew")
         sendBtn.grid(row=1, column=1, padx=5, pady=5, sticky="nsew")
         frmtBtn.grid(row=2, column=0, padx=5, pady=5, columnspan=2, sticky="nsew")
-        drivmenu.grid(row=3, column=0, padx=5, pady=5, columnspan=2, sticky="nsew")
+        self.drivmenu.grid(row=3, column=0, padx=5, pady=5, columnspan=2, sticky="nsew")
         
     def quit(self, event):
         sys.exit(0)
@@ -383,7 +384,7 @@ class App(tk.Tk):
         # Set "After" Callback
         self.after(50,self._update)
     
-    def scanDrives(self):
+    def scanDrives(self,firstscan=False):
         # Find Available Drives and Names
         strComputer = "." 
         objWMIService = win32com.Dispatch("WbemScripting.SWbemLocator")
@@ -401,14 +402,24 @@ class App(tk.Tk):
                 self.availDrives[drvStr] = drvName
                 if volName == 'KRNC':
                     self.driveVal.set(drvStr)
+        if not firstscan:
+            # Re-Load Drive Menu
+            self.drivmenu['menu'].delete(0, 'end')
+            for opt in self.availDrives.keys():
+                self.drivmenu['menu'].add_command(  label=opt,
+                            command=tk._setit(  self.driveVal, opt))
+            # Update Label if Needed
+            if self.driveVal.get() not in self.availDrives.keys():
+                self.driveVal.set("-usb-drive-")
     
     def formatDrive(self):
         # Capture Selected Drive Letter
         try:
             curDrive = self.availDrives[ self.driveVal.get() ] + '\\'
         except:
+            self.scanDrives()
             return
-        frmt = 'FAT'
+        frmt = 'NTFS'
         name = 'KRNC'
         # Validate Format Operation
         permission = tk.messagebox.askquestion("Format Drive",
@@ -424,21 +435,27 @@ class App(tk.Tk):
             fm.FormatEx(c_wchar_p(curDrive), FMIFS_UNKNOWN, c_wchar_p(frmt),
                         c_wchar_p(name), True, c_int(0), FMT_CB_FUNC(fmtCallback))
         else:
-            self.popupmsg("Drive Format Aborted",button_txt="OK",height=100,width=200)
+            self.popupmsg("Drive Format Aborted",button_txt="OK",height=150,width=200)
         # Re-Scan Drives
         self.scanDrives()
         if permission.lower() == 'yes':
-            drive = self.availDrives[ self.driveVal.get() ]
-            # Create KRNC Music Folder and Branding (Imaging) Path
-            Path( drive + barnpath ).mkdir(parents=True, exist_ok=True)
-            Path( drive + brndpath ).mkdir(parents=True, exist_ok=True)
-            # Generate USBarn File
-            with open(drive+'/'+drivedsc,'w') as t_file:
-                headerstring = ','.join([i['heading'] for i in headers])
-                t_file.write(headerstring+'\n,,\n')
-            # Notify Success
-            self.popupmsg(  "Drive Format Complete",title='KRNC',
-                            button_txt="OK",height=100,width=220)
+            try:
+                drive = self.availDrives[ self.driveVal.get() ]
+                # Create KRNC Music Folder and Branding (Imaging) Path
+                Path( drive + barnpath ).mkdir(parents=True, exist_ok=True)
+                Path( drive + brndpath ).mkdir(parents=True, exist_ok=True)
+                # Generate USBarn File
+                with open(drive+'/'+drivedsc,'w') as t_file:
+                    headerstring = ','.join([i['heading'] for i in headers])
+                    t_file.write(headerstring+'\n,,\n')
+                # Notify Success
+                self.popupmsg(  "Drive Format Complete",title='KRNC',
+                                button_txt="OK",height=150,width=220)
+            except:
+                pass
+            finally:
+                # Re-Scan One More Time
+                self.scanDrives()
     
     def gFilt(self,filter):
         # Iteratively Set Filter Column
@@ -454,7 +471,7 @@ class App(tk.Tk):
         # Start Loading Bar
         self.loader = LoadingBar(   text="Fetching Files.",
                                     width=300,
-                                    height=100,
+                                    height=150,
                                 )
         # Store Zipped File
         with open(filepath,'wb') as tempZip:
@@ -469,13 +486,20 @@ class App(tk.Tk):
         self.loader.destroy()
     
     def load_drive(self):
-        # Attempt Loading Barn Description from USB
-        driveNm = self.availDrives[ self.driveVal.get() ]
+        try:
+            # Attempt Loading Barn Description from USB
+            driveNm = self.availDrives[ self.driveVal.get() ]
+        except:
+            # Invalid Drive
+            self.popupmsg("An error occurred while loading\nthat USB Drive.",
+                            width=300,height=150)
+            self.scanDrives()
+            return
         usbarn = driveNm + drivedsc
         if not self.validate_barn( usbarn ):
             # Invalid Barn
             self.popupmsg("An error occurred while loading\nthat USBarn description.",
-                            width=300,height=100)
+                            width=300,height=150)
             return
         # Barn was validated, read listing
         usb_struct = {}
@@ -529,7 +553,7 @@ class App(tk.Tk):
         if max(len(to_be_added),len(to_be_remvd),len(zip_files),len(uzip_files)) == 0:
             # Abort, No Changes to Make!
             self.popupmsg(  "USB Drive Load Aborted\nNo Changes Detected.",
-                            button_txt="OK",width=300,height=100)
+                            button_txt="OK",width=300,height=150)
             return
         # Create Pop-Up Table Describing Delta
         dialog = TableDialog(self,add_display,rmv_display,"USBarn Load - Confirm Load",
@@ -539,7 +563,7 @@ class App(tk.Tk):
         if not approval:
             # Abort
             self.popupmsg(  "USB Drive Load Aborted",button_txt="OK",
-                            width=300,height=100)
+                            width=300,height=150)
             return
         # Build Load Structure
         load_struct = {}
@@ -582,6 +606,8 @@ class App(tk.Tk):
         preBarn = self.barn
         self.save_barn_as( usbarn )
         self.barn = preBarn
+        self.popupmsg("Drive Completed!\nWelcome Home.",
+                        width=300,height=200)
     
     def delete_selcted(self):
         # Delete Selected Row(s)
@@ -738,7 +764,7 @@ class App(tk.Tk):
                 outputfile.write(row+'\n')  # Write to File
     
     def set_about_callback(self,callable,title="KRNC USB Manager Info",bg=bggrey,
-                           button_txt="Close",height=100,width=300,*args,**kwargs):
+                           button_txt="Close",height=150,width=300,*args,**kwargs):
         # Define Callback Methodology to Change The `About` Popup
         def callback():
             self.popupmsg(msg=callable(*args,**kwargs),bg=bg,height=height,
