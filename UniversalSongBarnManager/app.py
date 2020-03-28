@@ -759,9 +759,13 @@ class App(tk.Tk):
         with open(self.barn,'w') as outputfile:
             headerstring = ','.join([i['heading'] for i in headers])
             outputfile.write(headerstring+'\n')
+            writtenList = []
             for rowList in cellDict.values():
-                row = ','.join(rowList)     # Create CSV Row
-                outputfile.write(row+'\n')  # Write to File
+                # Validate Row as Unique (don't allow duplicates)
+                if rowList not in writtenList:
+                    row = ','.join(rowList)     # Create CSV Row
+                    outputfile.write(row+'\n')  # Write to File
+                    writtenList.append(rowList)
     
     def set_about_callback(self,callable,title="KRNC USB Manager Info",bg=bggrey,
                            button_txt="Close",height=150,width=300,*args,**kwargs):
