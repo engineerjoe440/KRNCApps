@@ -55,6 +55,7 @@ from importlib.machinery import SourceFileLoader
 import lib.win32com.client as win32com
 from ctypes import windll, WINFUNCTYPE, c_wchar_p, c_int, c_void_p
 from pathlib import Path
+import requests
 
 # Define Image Path
 imagedir = 'images'
