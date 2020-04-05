@@ -1,0 +1,20 @@
+{
+  "Cell": {
+    "cm_config": {
+      "lineNumbers": true
+    }
+  },
+  "keys": {
+    "command": {
+      "bind": {
+        "shift-r": "jupyter-notebook:restart-kernel-and-run-all-cells"
+      }
+    }
+  },
+  "load_extensions": {
+    "nbextensions_configurator/config_menu/main": true,
+    "contrib_nbextensions_help_item/main": true,
+    "spellchecker/main": true,
+    "python-markdown/main": true
+  }
+}
