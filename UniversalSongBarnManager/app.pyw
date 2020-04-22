@@ -7,6 +7,13 @@ By: Joe Stanley
 #######################################################################################
 """
 
+# Define Version Information
+__version__ = 0.1
+def version():
+    msg  = "UniversalSongBarn Manager Version: {}".format(__version__)
+    msg += "\nby Stanley Solutions"
+    return(msg)
+
 # Generic Defenitions
 bgblue = '#506c91'
 fgblue = 'white'
@@ -70,6 +77,15 @@ Path(stockpath).mkdir(parents=True, exist_ok=True)
 # Import Common Requirements
 from lib.tkinterroutines import Splash, LoadingBar, BlockLoadingBar, TableDialog
 from lib.tkintertable import TableCanvas, TableModel
+
+# Identify Argument
+barnfile = None
+cmdargs = sys.argv
+for arg in cmdargs:
+    if arg.lower().endswith('.barn') :
+        # Found Barn Description File
+        barnfile = arg
+        break
 
 # Define Filter Import Function
 def load_filter_driver(name,path=filterpath):
@@ -311,6 +327,7 @@ class App(tk.Tk):
         self.drivmenu.grid(row=3, column=0, padx=5, pady=5, columnspan=2, sticky="nsew")
         
     def quit(self, event):
+        self.destroy()
         sys.exit(0)
     
     def center(self):
@@ -801,8 +818,11 @@ class App(tk.Tk):
         self.mainloop()
 
 if __name__ == "__main__":
-    import time
-    app = App()
-    time.sleep(2)
-    app.run()
+    mainApp = App()
+    # Barn Description File was Found
+    if barnfile != None:
+        mainApp.open_barn(barnfile)
+    mainApp.set_about_callback(version)
+    time.sleep(3)
+    mainApp.run()
 # END

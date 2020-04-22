@@ -18,10 +18,13 @@ def main(infile,outfile):
         infile = infile[:-1]
     if outfile.endswith('\''):
         outfile = outfile[:-1]
+    # Prevent Popup Console
+    si = subprocess.STARTUPINFO()
+    si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
     # Build full Command List
     cmd = [sox, infile, outfile, *effect]
     # Run Subprocess
-    p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, startupinfo=si)
     p.wait()
     return(p.returncode)
 
