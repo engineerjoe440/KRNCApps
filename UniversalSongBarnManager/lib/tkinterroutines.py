@@ -54,6 +54,7 @@ class Splash(tk.Toplevel):
     def __init__(self,parent,fg='white',bg='#506c91',imgw=150,imgh=150,
                  width=200,height=200,image=None,text=''):
         tk.Toplevel.__init__(self, parent)
+        self.attributes("-topmost", True)
         self.center()
         self.geometry("{}x{}".format(width,height))
         self.configure(background=bg)
