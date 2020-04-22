@@ -796,6 +796,7 @@ class App(tk.Tk):
     def popupmsg(self,msg="--default--",title="KRNC USB Manager Info",
                  button_txt="Close",bg=bggrey,height=200,width=400):
         popup = tk.Tk()
+        popup.lift()
         popup.wm_title(title)
         popup.configure(background=bg)
         popup.geometry("{}x{}".format(width,height))
