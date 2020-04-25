@@ -28,6 +28,10 @@ The various applications in this repository are described as follows:
     - Broadcast imaging filter and preprocessor with full system loading functionality
 
  - Ranch Hand
+    - VirtualDJ software settings management system
+    - Multi-device settings sharing system and management
+ 
+ - Shotgun Rider
     - Simple in-vehicle audio playback application with genere mixing
     - Full KRNC imaging incorporation
     
