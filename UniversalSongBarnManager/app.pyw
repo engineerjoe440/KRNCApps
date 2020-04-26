@@ -49,7 +49,7 @@ krncbrandp = utilpath + 'KRNCbranding/'
 brandurl =  ("https://github.com/engineerjoe440/KRNCApps/blob/master/"+
             "common/branding/KrncBranding.zip?raw=true")
 
-# Required Imports
+# Import Required Dependencies
 import tkinter as tk
 from tkinter.font import Font
 from lib.PIL import Image, ImageTk
