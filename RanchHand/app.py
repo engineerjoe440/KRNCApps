@@ -12,6 +12,7 @@ import os
 import time
 import PySimpleGUI as sg
 import webbrowser
+import configparser
 
 # Define Generic Parameters
 bgblue = '#506c91'
@@ -27,6 +28,7 @@ titleWidth = 74
 outputWidth = 120
 outputHeight = 7
 helpdoc = 'https://github.com/engineerjoe440/KRNCApps/blob/master/RanchHand/README.md'
+configfile = 'C:\\ProgramData\\StanleySolutions\\KRNC\\RanchHand\\config.ini'
 
 #######################################################################################
 # Add Custom Theme in-line with KRNC Coloring
@@ -51,14 +53,20 @@ icon = imagedir+'/KRNC.ico'
 #######################################################################################
 
 #######################################################################################
+# Read Configuration File
+config = configparser.ConfigParser()
+config.read(configfile)
+#######################################################################################
+
+#######################################################################################
 # Build Window Layout
 inputsCol = [
     [sg.Text('OneDrive Audio Folder',size=(descWidth,1)),
-        sg.In(key='onedriveaudio'),sg.FolderBrowse(target='onedriveaudio')],
+        sg.In(key='OneDriveMusic'),sg.FolderBrowse(target='OneDriveMusic')],
     [sg.Text('OneDrive VirtualDJ Folder',size=(descWidth,1)),
-        sg.In(key='onedrivesettings'),sg.FolderBrowse(target='onedrivesettings')],
+        sg.In(key='OneDriveSettings'),sg.FolderBrowse(target='OneDriveSettings')],
     [sg.Text('Local VirtualDJ Folder',size=(descWidth,1)),
-        sg.In(key='localsettings'),sg.FolderBrowse(target='localsettings')],
+        sg.In(key='LocalSettings'),sg.FolderBrowse(target='LocalSettings')],
 ]
 contCol = [
     [sg.Button('Save Configuration',key='save',size=(descWidth,1))],
@@ -82,6 +90,20 @@ window = sg.Window('KRNC Ranch Hand', mainlayout, icon=icon)
 def app():
     global window
     window.finalize()
+    # Test for Valid Configuration File
+    if not config.sections():
+        print("No valid Ranch Hand configuration file...",
+            "New configuration file will be generated.")
+        # Build Default Configuration
+        config['RanchHand'] = {
+            "OneDriveMusic" : "",
+            "OneDriveSettings" : "",
+            "LocalSettings" : "",
+        }
+    # Load Configuration Strings
+    window['OneDriveMusic'].update(value=config['RanchHand']['OneDriveMusic'])
+    window['OneDriveSettings'].update(value=config['RanchHand']['OneDriveSettings'])
+    window['LocalSettings'].update(value=config['RanchHand']['LocalSettings'])
     # Run Event Loop
     while True:
         # Capture Values from Window Event
@@ -90,8 +112,19 @@ def app():
         if event in (None, 'Exit'):
             break
         # Open Help Page (GitHub Markdown)
-        if event == 'help':
+        elif event == 'help':
             webbrowser.open(helpdoc)
+        # Manage Save Settings Configuration
+        elif event == 'save':
+            # Capture New Configuration
+            config['RanchHand']['OneDriveMusic'] = window['OneDriveMusic'].get()
+            config['RanchHand']['OneDriveSettings'] = window['OneDriveSettings'].get()
+            config['RanchHand']['LocalSettings'] = window['LocalSettings'].get()
+            # Store Configuration
+            with open(configfile, 'w') as conffile:
+                config.write(conffile)
+            # Indicate Success
+            print("Successfully updated configuration.")
 #######################################################################################    
 
 

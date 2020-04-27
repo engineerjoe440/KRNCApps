@@ -24,30 +24,36 @@ monitoredFiles = [
 def folderisempty( folderpath ):
     return([f for f in os.listdir(folderpath) if not f.startswith('.')] == [])
 
-# Define Modify and Move Function
-def modnmove(srcpath, dstpath, srcstring, dststring):
+# Define Modify and Move Function for Single Files
+def modify_move_file(srcfpath, dstfpath, srcstring, dststring):
+    print("Resolving:",srcfpath,"to:",dstfpath)
+    # Check for Monitored File Type
+    if fname.split('.')[-1] in monitoredFiles:
+        try:
+            # Read Source
+            with open(srcfpath, encoding='utf-8') as f:
+                s = f.read()
+            # Replace
+            s = s.replace(srcstring, dststring)
+            # Write to Destination
+            with open(dstfpath, "w", encoding='utf-8') as f:
+                f.write(s)
+        except:
+            shutil.copy(srcfpath,dstfpath)
+    # Un-manageable File Type
+    else:
+        shutil.copy(srcfpath,dstfpath)
+
+# Define Modify and Move Function for Entire Folders
+def modify_move_folders(srcpath, dstpath, srcstring, dststring):
     # Walk over Source Path
     for dname, dirs, files in os.walk(srcpath):
         for fname in files:
             # Determine Fully-Qualified File Paths
             srcfpath = os.path.join(dname, fname)
             dstfpath = os.path.join(dname, fname)
-            print("Resolving:",srcfpath,"to:",dstfpath)
-            # Check for Monitored File Type
-            if fname.split('.')[-1] in monitoredFiles:
-                # Read Source
-                with open(srcfpath, encoding='utf-8') as f:
-                    s = f.read()
-                # Replace
-                s = s.replace(srcstring, dststring)
-                # Write to Destination
-                with open(dstfpath, "w", encoding='utf-8') as f:
-                    f.write(s)
-            # Un-manageable File Type
-            else:
-                shutil.copy(srcfpath,dstfpath)
-
-
+            # Modify and Move File
+            modify_move_file(srcfpath, dstfpath, srcstring, dststring)
 
 
 # END
