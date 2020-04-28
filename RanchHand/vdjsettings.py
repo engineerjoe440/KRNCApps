@@ -20,6 +20,9 @@ monitoredFiles = [
     'vdjfolder',
 ]
 
+# Define Generic Text Section
+generic_path = '<krnc-path>'
+
 # Define "Empty Folder" Test Function
 def folderisempty( folderpath ):
     return([f for f in os.listdir(folderpath) if not f.startswith('.')] == [])

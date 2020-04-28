@@ -10,6 +10,7 @@ By: Joe Stanley
 # Import Standard Python Dependencies
 import os
 import socket
+import subprocess
 import win32serviceutil
 import servicemanager
 import win32event
@@ -17,12 +18,23 @@ import win32service
 import win32file
 import win32con
 import configparser
+import PySimpleGUIQt as sg
 
 # Import Local Dependencies
 import vdjsettings
 
-# Define Configuration File Location
+# Define File Locations
 configfile = 'C:\\ProgramData\\StanleySolutions\\KRNC\\RanchHand\\config.ini'
+iconfile = 'C:\\Program Files (x86)\\StanleySolutions\\KRNC\\RanchHand\\images\\KRNCnegative.ico'
+configapp = 'C:\\Program Files (x86)\\StanleySolutions\\KRNC\\RanchHand\\RanchHand.exe'
+
+# Load Default Icon if `iconfile` Doesn't Exist
+if not os.path.exists(iconfile):
+    iconfile = ("D:\\Files\\Stanley Solutions\\KRNCApps\\RanchHand\\"+
+                "images\\KRNCnegative.ico")
+
+# Define Menu Options
+menu_def = ['BLANK', ['Configuration', 'Exit']]
 
 # Define Primary Windows Service Class
 class ConstructorService(win32serviceutil.ServiceFramework):
@@ -32,14 +44,16 @@ class ConstructorService(win32serviceutil.ServiceFramework):
     _svc_display_name_ = 'KRNC Ranch Hand'
     _svc_description_ = 'VirtualDJ Settings Sharing Manager - by StanleySolutions'
     
-    self.ACTIONS = {
+    tray = sg.SystemTray(menu=menu_def, filename=iconfile)
+    
+    ACTIONS = {
       1 : "Created",
       2 : "Deleted",
       3 : "Updated",
       4 : "Renamed",
       5 : "Renamed"
     }
-    self.FILE_LIST_DIRECTORY = 0x0001
+    FILE_LIST_DIRECTORY = 0x0001
 
     @classmethod
     def parse_command_line(cls):
@@ -120,6 +134,14 @@ class ConstructorService(win32serviceutil.ServiceFramework):
         '''
 ##########################################################################
         while not self.kill:
+            # Monitor System Tray
+            menu_item = self.tray.read()
+            print(menu_item)
+            if menu_item == 'Exit':
+                self.kill = True
+            elif menu_item in ['Open','__ACTIVATED__']:
+                # Start Configuration App
+                subprocess.call([configapp])
             # Manage File Moves from Local to Remote
             ##############################################################
             # Monitor Directory Every Scan
