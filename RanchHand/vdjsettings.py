@@ -20,6 +20,7 @@ monitoredFiles = [
     'vdjfolder',
 ]
 
+
 # Define Generic Text Section
 generic_path = '<krnc-path>'
 
@@ -29,9 +30,18 @@ def folderisempty( folderpath ):
 
 # Define Modify and Move Function for Single Files
 def modify_move_file(srcfpath, dstfpath, srcstring, dststring):
-    print("Resolving:",srcfpath,"to:",dstfpath)
+    # Format Source and Destination Folders with "Windows" Backslashes
+    srcfpath = srcfpath.replace('/','\\')
+    dstfpath = dstfpath.replace('/','\\')
+    srcstring = srcstring.replace('/','\\')
+    dststring = dststring.replace('/','\\')
+    print("Resolving: '{}'  to: '{}'".format(srcfpath, dstfpath))
+    print("   - '{}' replaced with '{}' placeholder".format(srcstring, dststring))
+    # Validate Not License (Never Changes)
+    if srcfpath.endswith('license.dat'):
+        print("Skipping 'license.dat' File")
     # Check for Monitored File Type
-    if fname.split('.')[-1] in monitoredFiles:
+    elif os.path.basename(srcfpath).split('.')[-1] in monitoredFiles:
         try:
             # Read Source
             with open(srcfpath, encoding='utf-8') as f:
@@ -42,10 +52,16 @@ def modify_move_file(srcfpath, dstfpath, srcstring, dststring):
             with open(dstfpath, "w", encoding='utf-8') as f:
                 f.write(s)
         except:
-            shutil.copy(srcfpath,dstfpath)
+            try:
+                shutil.copy(srcfpath,dstfpath)
+            except:
+                print("Warning - Skipping")
     # Un-manageable File Type
     else:
-        shutil.copy(srcfpath,dstfpath)
+        try:
+            shutil.copy(srcfpath,dstfpath)
+        except:
+            print("Warning - Skipping")
 
 # Define Modify and Move Function for Entire Folders
 def modify_move_folders(srcpath, dstpath, srcstring, dststring):
@@ -54,7 +70,7 @@ def modify_move_folders(srcpath, dstpath, srcstring, dststring):
         for fname in files:
             # Determine Fully-Qualified File Paths
             srcfpath = os.path.join(dname, fname)
-            dstfpath = os.path.join(dname, fname)
+            dstfpath = os.path.join(dname, fname).replace(srcpath,dstpath)
             # Modify and Move File
             modify_move_file(srcfpath, dstfpath, srcstring, dststring)
 

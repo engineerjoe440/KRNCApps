@@ -31,7 +31,7 @@ warnred = '#ECC7DB'
 descWidth = 20
 sepWidth = 23
 titleWidth = 74
-outputWidth = 120
+outputWidth = 140
 outputHeight = 7
 servicename = 'RanchHand'
 helpdoc = 'https://github.com/engineerjoe440/KRNCApps/blob/master/RanchHand/README.md'
@@ -98,7 +98,7 @@ mainlayout = [
         sg.Button('',key='help',image_filename=help,image_size=(25, 25),
             image_subsample=85, border_width=0)],
     [sg.Column(inputsCol), sg.Column(spcrCol), sg.Column(contCol)],
-    [sg.Output(size=(outputWidth, outputHeight))],
+    [sg.Output(size=(outputWidth, outputHeight),font=('TkDefaultFont',8))],
 ]
 #######################################################################################
 
@@ -136,16 +136,39 @@ def app():
         # Open Help Page (GitHub Markdown)
         elif event == 'help':
             webbrowser.open(helpdoc)
-        # Manage Save Settings Configuration
-        elif event == 'save':
+        # Manage Save/Push/Pull Settings from OneDrive
+        elif event in ['save', 'pull', 'push']:
             # Validate all Configuration Before Restarting Service
-            if (window['OneDriveMusic'].get() and
+            if not (window['OneDriveMusic'].get() and
                 window['OneDriveSettings'].get() and
                 window['LocalSettings'].get()) :
+                # Not Valid! Inform User
+                print("All fields are required!")
+                # Warn for Local Settings Folder Input
+                if not window['LocalSettings'].get():
+                    window['LocalSettings'].update(background_color=warnred)
+                    window['LocalSettings'].SetFocus()
+                # Warn for Remote OneDrive Settings
+                if not window['OneDriveSettings'].get():
+                    window['OneDriveSettings'].update(background_color=warnred)
+                    window['OneDriveSettings'].SetFocus()
+                # Warn for Remote OneDrive Music Folder
+                if not window['OneDriveMusic'].get():
+                    window['OneDriveMusic'].update(background_color=warnred)
+                    window['OneDriveMusic'].SetFocus()
+                # Continue Loop
+                continue
+            
+            else:
                 # Capture New Configuration
                 config['RanchHand']['OneDriveMusic'] = window['OneDriveMusic'].get()
                 config['RanchHand']['OneDriveSettings'] = window['OneDriveSettings'].get()
                 config['RanchHand']['LocalSettings'] = window['LocalSettings'].get()
+            
+            # Manage Save Settings Configuration
+            if event == 'save':
+                print("Saving...")
+                window.Refresh()
                 # Validate Storage Location
                 if not os.path.exists(os.path.dirname(configfile)):
                     Path(os.path.dirname(configfile)).mkdir(parents=True, exist_ok=True)
@@ -163,8 +186,9 @@ def app():
                         srcstring = config['RanchHand']['LocalSettings'],
                         dststring = vdj.generic_path
                     )
-                except:
+                except Exception as e:
                     print("Attempt to mirror local settings to OneDrive failed.")
+                    print(e)
                 # Manage the Windows Service
                 try:
                     serviceSta = win32serviceutil.QueryServiceStatus(servicename)
@@ -191,21 +215,40 @@ def app():
                     except:
                         print("Failed to start service. Please try again.")
                         continue # in case more code is added later
-            else:
-                # Not Valid! Inform User
-                print("All fields are required!")
-                # Warn for Local Settings Folder Input
-                if not window['LocalSettings'].get():
-                    window['LocalSettings'].update(background_color=warnred)
-                    window['LocalSettings'].SetFocus()
-                # Warn for Remote OneDrive Settings
-                if not window['OneDriveSettings'].get():
-                    window['OneDriveSettings'].update(background_color=warnred)
-                    window['OneDriveSettings'].SetFocus()
-                # Warn for Remote OneDrive Music Folder
-                if not window['OneDriveMusic'].get():
-                    window['OneDriveMusic'].update(background_color=warnred)
-                    window['OneDriveMusic'].SetFocus()
+            # Manage Pull Settings
+            elif event == 'pull':
+                # Copy Remote Files Over Local
+                try:
+                    # Move Folders
+                    print("Starting Pull...")
+                    window.Refresh()
+                    vdj.modify_move_folders(
+                        srcpath = config['RanchHand']['OneDriveSettings'],
+                        dstpath = config['RanchHand']['LocalSettings'],
+                        srcstring = vdj.generic_path,
+                        dststring = config['RanchHand']['LocalSettings']
+                    )
+                    print("Settings Pull Completed!")
+                except Exception as e:
+                    print("Attempt to mirror local settings to OneDrive failed.")
+                    print(e)
+            # Manage Push Settings
+            elif event == 'push':
+                # Copy Local Files Over Remote
+                try:
+                    # Move Folders
+                    print("Starting Push...")
+                    window.Refresh()
+                    vdj.modify_move_folders(
+                        srcpath = config['RanchHand']['LocalSettings'],
+                        dstpath = config['RanchHand']['OneDriveSettings'],
+                        srcstring = config['RanchHand']['LocalSettings'],
+                        dststring = vdj.generic_path
+                    )
+                    print("Settings Push Completed!")
+                except Exception as e:
+                    print("Attempt to mirror local settings to OneDrive failed.")
+                    print(e)
 #######################################################################################    
 
 
