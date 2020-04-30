@@ -18,6 +18,7 @@ import win32service
 import win32file
 import win32con
 import configparser
+import traceback
 import PySimpleGUIQt as sg
 
 # Import Local Dependencies
@@ -25,7 +26,8 @@ import vdjsettings
 
 # Define File Locations
 configfile = 'C:\\ProgramData\\StanleySolutions\\KRNC\\RanchHand\\config.ini'
-iconfile = 'C:\\Program Files (x86)\\StanleySolutions\\KRNC\\RanchHand\\images\\KRNCnegative.ico'
+iconfile = 'C:\\Program Files (x86)\\StanleySolutions\\KRNC\\RanchHand\\images\\KRNC.ico'
+iconfileneg = 'C:\\Program Files (x86)\\StanleySolutions\\KRNC\\RanchHand\\images\\KRNCnegative.ico'
 configapp = 'C:\\Program Files (x86)\\StanleySolutions\\KRNC\\RanchHand\\RanchHand.exe'
 
 # Load Default Icon if `iconfile` Doesn't Exist
@@ -44,7 +46,7 @@ class ConstructorService(win32serviceutil.ServiceFramework):
     _svc_display_name_ = 'KRNC Ranch Hand'
     _svc_description_ = 'VirtualDJ Settings Sharing Manager - by StanleySolutions'
     
-    tray = sg.SystemTray(menu=menu_def, filename=iconfile)
+    tray = sg.SystemTray(menu=menu_def, filename=iconfileneg)
     
     ACTIONS = {
       1 : "Created",
@@ -54,6 +56,8 @@ class ConstructorService(win32serviceutil.ServiceFramework):
       5 : "Renamed"
     }
     FILE_LIST_DIRECTORY = 0x0001
+    
+    kill = False
 
     @classmethod
     def parse_command_line(cls):
@@ -102,88 +106,110 @@ class ConstructorService(win32serviceutil.ServiceFramework):
         self.LOCALFOLDER = config['RanchHand']['LocalSettings']
         self.REMOTEFOLDER = config['RanchHand']['OneDriveSettings']
         self.ONEDRIVEMX = config['RanchHand']['OneDriveMusic']
+        print("Local Folder: {}".format(self.LOCALFOLDER))
+        print("Remote Folder: {}".format(self.REMOTEFOLDER))
         # Build Directory Handles
-        self._localDirHandle = win32file.CreateFile (
-          self.LOCALFOLDER,
-          FILE_LIST_DIRECTORY,
-          win32con.FILE_SHARE_READ | win32con.FILE_SHARE_WRITE | win32con.FILE_SHARE_DELETE,
-          None,
-          win32con.OPEN_EXISTING,
-          win32con.FILE_FLAG_BACKUP_SEMANTICS,
-          None
-        )
-        self._remoteDirHandle = win32file.CreateFile (
-          self.REMOTEFOLDER,
-          FILE_LIST_DIRECTORY,
-          win32con.FILE_SHARE_READ | win32con.FILE_SHARE_WRITE | win32con.FILE_SHARE_DELETE,
-          None,
-          win32con.OPEN_EXISTING,
-          win32con.FILE_FLAG_BACKUP_SEMANTICS,
-          None
-        )
+        try:
+            self._localDirHandle = win32file.CreateFile(
+              self.LOCALFOLDER,
+              self.FILE_LIST_DIRECTORY,
+              win32con.FILE_SHARE_READ | win32con.FILE_SHARE_WRITE | win32con.FILE_SHARE_DELETE,
+              None,
+              win32con.OPEN_EXISTING,
+              win32con.FILE_FLAG_BACKUP_SEMANTICS,
+              None
+            )
+            self._remoteDirHandle = win32file.CreateFile(
+              self.REMOTEFOLDER,
+              self.FILE_LIST_DIRECTORY,
+              win32con.FILE_SHARE_READ | win32con.FILE_SHARE_WRITE | win32con.FILE_SHARE_DELETE,
+              None,
+              win32con.OPEN_EXISTING,
+              win32con.FILE_FLAG_BACKUP_SEMANTICS,
+              None
+            )
+        except Exception as e:
+            print("Failure!")
+            print(e)
+        print("Startup Successful.")
+        self.isrunning = True
 
     def stop(self):
         '''
         Mark internal attribute to stop service
         '''
         self.kill = True
+        self.isrunning = False
 
     def main(self):
         '''
         Main body method called when started
         '''
 ##########################################################################
-        while not self.kill:
-            # Monitor System Tray
-            menu_item = self.tray.read()
-            print(menu_item)
-            if menu_item == 'Exit':
-                self.kill = True
-            elif menu_item in ['Open','__ACTIVATED__']:
-                # Start Configuration App
-                subprocess.call([configapp])
-            # Manage File Moves from Local to Remote
-            ##############################################################
-            # Monitor Directory Every Scan
-            results = win32file.ReadDirectoryChangesW (
-                self._localDirHandle,
-                1024,
-                True,
-                win32con.FILE_NOTIFY_CHANGE_FILE_NAME |
-                 win32con.FILE_NOTIFY_CHANGE_DIR_NAME |
-                 win32con.FILE_NOTIFY_CHANGE_ATTRIBUTES |
-                 win32con.FILE_NOTIFY_CHANGE_SIZE |
-                 win32con.FILE_NOTIFY_CHANGE_LAST_WRITE |
-                 win32con.FILE_NOTIFY_CHANGE_SECURITY,
-                None,
-                None
-            )
-            # Iterate Over Results to Perform Necessary Actions
-            for action, file in results:
-                full_filename = os.path.join(self.MONFOLDER, file)
-                print(full_filename, self.ACTIONS.get(action, "Unknown"))
+        try:
+            while not self.kill:
+                # Monitor System Tray
+                menu_item = self.tray.read()
+                print(menu_item)
+                if menu_item == '__TIMEOUT__':
+                    pass
+                elif menu_item == 'Exit':
+                    self.kill = True
+                elif menu_item in ['Open','__ACTIVATED__']:
+                    # Start Configuration App
+                    try:
+                        subprocess.call([configapp])
+                    except:
+                        print("Unable to start RanchManager App.")
+                        sg.popup_error("Unable to start RanchManager App.",
+                            icon=iconfile, background_color='#506c91')
+                # Manage File Moves from Local to Remote
+                ##############################################################
+                # Monitor LOCAL Directory Every Scan
+                results = win32file.ReadDirectoryChangesW (
+                    self._localDirHandle,
+                    1024,
+                    True,
+                    win32con.FILE_NOTIFY_CHANGE_FILE_NAME |
+                     win32con.FILE_NOTIFY_CHANGE_DIR_NAME |
+                     win32con.FILE_NOTIFY_CHANGE_ATTRIBUTES |
+                     win32con.FILE_NOTIFY_CHANGE_SIZE |
+                     win32con.FILE_NOTIFY_CHANGE_LAST_WRITE |
+                     win32con.FILE_NOTIFY_CHANGE_SECURITY,
+                    None,
+                    None
+                )
+                print("pass1")
+                # Iterate Over Results to Perform Necessary Actions
+                for action, file in results:
+                    full_filename = os.path.join(self.LOCALFOLDER, file)
+                    print(full_filename, self.ACTIONS.get(action, "Unknown"))
 ##########################################################################
-            # Manage File Moves from Remote to Local
-            ##############################################################
-            # Monitor Directory Every Scan
-            results = win32file.ReadDirectoryChangesW (
-                self._remoteDirHandle,
-                1024,
-                True,
-                win32con.FILE_NOTIFY_CHANGE_FILE_NAME |
-                 win32con.FILE_NOTIFY_CHANGE_DIR_NAME |
-                 win32con.FILE_NOTIFY_CHANGE_ATTRIBUTES |
-                 win32con.FILE_NOTIFY_CHANGE_SIZE |
-                 win32con.FILE_NOTIFY_CHANGE_LAST_WRITE |
-                 win32con.FILE_NOTIFY_CHANGE_SECURITY,
-                None,
-                None
-            )
-            # Iterate Over Results to Perform Necessary Actions
-            for action, file in results:
-                full_filename = os.path.join(self.MONFOLDER, file)
-                print(full_filename, self.ACTIONS.get(action, "Unknown"))
+                # Manage File Moves from Remote to Local
+                ##############################################################
+                # Monitor REMOTE Directory Every Scan
+                results = win32file.ReadDirectoryChangesW (
+                    self._remoteDirHandle,
+                    1024,
+                    True,
+                    win32con.FILE_NOTIFY_CHANGE_FILE_NAME |
+                     win32con.FILE_NOTIFY_CHANGE_DIR_NAME |
+                     win32con.FILE_NOTIFY_CHANGE_ATTRIBUTES |
+                     win32con.FILE_NOTIFY_CHANGE_SIZE |
+                     win32con.FILE_NOTIFY_CHANGE_LAST_WRITE |
+                     win32con.FILE_NOTIFY_CHANGE_SECURITY,
+                    None,
+                    None
+                )
+                print("pass2")
+                # Iterate Over Results to Perform Necessary Actions
+                for action, file in results:
+                    full_filename = os.path.join(self.REMOTEFOLDER, file)
+                    print(full_filename, self.ACTIONS.get(action, "Unknown"))
 ##########################################################################
+        except Exception as e:
+            print("An Error Occurred and Service Died.")
+            print(e)
 
 # Service Routine Entry Point
 if __name__ == '__main__':
