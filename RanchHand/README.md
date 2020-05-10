@@ -25,21 +25,21 @@ and as such, the installer will perform the folder construction that is required
 
 ```
  C:\
-  |---ProgramData
-  |   |---StanleySolutions
-  |       |---KRNC
-  |           |---RanchHand
-  |               |   config.ini
-  |
-  |---Program Files (x86)
-      |---StanleySolutions
-          |---KRNC
-              |---RanchHand
-                  |   RanchHand.exe
-                  |
-                  |---images
-                      |   KRNC.ico
-                      |   KRNCnegative.ico
+  ├─── ProgramData
+  │    └─── StanleySolutions
+  │         └─── KRNC
+  │              └─── RanchHand
+  │                   └── config.ini
+  │
+  ├─── Program Files (x86)
+       └─── StanleySolutions
+            └─── KRNC
+                 └─── RanchHand
+                      ├─── RanchHand.exe
+                      │
+                      └─── images
+                           ├─── KRNC.ico
+                           └─── KRNCnegative.ico
 ```
     
 ---
