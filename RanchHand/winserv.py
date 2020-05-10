@@ -24,13 +24,17 @@ import PySimpleGUIQt as sg
 # Import Local Dependencies
 import vdjsettings
 
-# Define File Locations
-configfile = 'C:\\ProgramData\\StanleySolutions\\KRNC\\RanchHand\\config.ini'
-iconfile = 'C:\\Program Files (x86)\\StanleySolutions\\KRNC\\RanchHand\\images\\KRNC.ico'
-iconfileneg = 'C:\\Program Files (x86)\\StanleySolutions\\KRNC\\RanchHand\\images\\KRNCnegative.ico'
-configapp = 'C:\\Program Files (x86)\\StanleySolutions\\KRNC\\RanchHand\\RanchHand.exe'
+# Define Folder Locations
+progFolder = 'C:\\Program Files (x86)\\StanleySolutions\\KRNC\\RanchHand\\'
+dataFolder = 'C:\\ProgramData\\StanleySolutions\\KRNC\\RanchHand\\'
 
-# Load Default Icon if `iconfile` Doesn't Exist
+# Define File Locations
+configfile  = dataFolder + 'config.ini'
+iconfile    = progFolder + 'images\\KRNC.ico'
+iconfileneg = progFolder + 'images\\KRNCnegative.ico'
+configapp   = progFolder + 'RanchHand.exe'
+
+# Load Default (dev) Icon if `iconfile` Doesn't Exist
 if not os.path.exists(iconfile):
     iconfile = ("D:\\Files\\Stanley Solutions\\KRNCApps\\RanchHand\\"+
                 "images\\KRNCnegative.ico")

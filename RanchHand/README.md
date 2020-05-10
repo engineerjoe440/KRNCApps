@@ -15,7 +15,32 @@ multiple personal computers.
 
 ---
 
+Ranch Hand utilizes both a user interface and Windows service to perform the actions
+necessry to synchronize the settings across multiple machines. Ranch Hand requires a
+shared cloud file service such as OneDrive or GoogleDrive with files stored locally
+on the machine to manage appropriate synchronization.
 
+Ranch Hand relies upon a file structure as shown below to manage files appropriately,
+and as such, the installer will perform the folder construction that is required.
+
+```
+ C:\
+  |---ProgramData
+  |   |---StanleySolutions
+  |       |---KRNC
+  |           |---RanchHand
+  |               |   config.ini
+  |
+  |---Program Files (x86)
+      |---StanleySolutions
+          |---KRNC
+              |---RanchHand
+                  |   RanchHand.exe
+                  |
+                  |---images
+                      |   KRNC.ico
+                      |   KRNCnegative.ico
+```
     
 ---
 
