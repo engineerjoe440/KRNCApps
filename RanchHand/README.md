@@ -1,4 +1,4 @@
-# KRNC Ranch Hand <img src="https://github.com/engineerjoe440/KRNCApps/blob/master/common/images/KRNC.png" width="100" alt="KRNC" align="right">
+# KRNC Ranch Hand <a href="https://github.com/engineerjoe440/KRNCApps"><img src="https://github.com/engineerjoe440/KRNCApps/blob/master/common/images/KRNC.png" width="100" alt="KRNC" align="right"></a>
 
 *VirtualDJ Database, Settings, Playlist, and Information Manager*
 

@@ -1,4 +1,4 @@
-# KRNC Universal Song Barn Manager <img src="https://github.com/engineerjoe440/KRNCApps/blob/master/common/images/KRNC.png" width="100" alt="KRNC" align="right">
+# KRNC Universal Song Barn Manager <a href="https://github.com/engineerjoe440/KRNCApps"><img src="https://github.com/engineerjoe440/KRNCApps/blob/master/common/images/KRNC.png" width="100" alt="KRNC" align="right"></a>
 
 *USB Flash Drive Audio Manager for Mobile and Vehicle Playback*
 
