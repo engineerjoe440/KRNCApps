@@ -16,22 +16,22 @@ and playback to music file management and broadcast filtering preprocessing syst
 
 The various applications in this repository are described as follows:
 
- - Universal Song Barn Manager
+ - [Universal Song Barn Manager](https://github.com/engineerjoe440/KRNCApps/tree/master/UniversalSongBarnManager)
     - A USB Flash Drive Management Solution for EQ/Level Matching
     - Incorporation of standard KRNC Imaging
 
- - Ranch Radio
+ - [Ranch Radio](https://github.com/engineerjoe440/KRNCApps/tree/master/RanchRadio)
     - Fully-Developed, yet light, real-time radio automation and playback solution
     - Manages full directories of music and imaging, mixing as necessary
 
- - Branding Hand
+ - [Branding Hand](https://github.com/engineerjoe440/KRNCApps/tree/master/BrandingHand)
     - Broadcast imaging filter and preprocessor with full system loading functionality
 
- - Ranch Hand
+ - [Ranch Hand](https://github.com/engineerjoe440/KRNCApps/tree/master/RanchHand)
     - VirtualDJ software settings management system
     - Multi-device settings sharing system and management
  
- - Shotgun Rider
+ - [Shotgun Assistant](https://github.com/engineerjoe440/KRNCApps/tree/master/ShotgunAssistant)
     - Simple in-vehicle audio playback application with genere mixing
     - Full KRNC imaging incorporation
     
