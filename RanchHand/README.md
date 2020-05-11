@@ -38,10 +38,30 @@ and as such, the installer will perform the folder construction that is required
                       ├─── RanchHand.exe
                       │
                       └─── images
+                           ├─── help.png
+                           ├─── KRNC.png
+                           ├─── KRNCnegative.png
                            ├─── KRNC.ico
                            └─── KRNCnegative.ico
 ```
-    
+
+The Ranch Hand management app is accessible from the system tray and supports a
+small set of settings that describe the location of the three primary folder
+locations of interest. These three folders are the local VirtualDJ folder, the
+remote (cloud-drive folder) VirtualDJ folder, and the cloud-drive folder where
+music files are stored.
+
+<img src="https://github.com/engineerjoe440/KRNCApps/blob/master/common/images/RanchHandApp.png" width="100" alt="KRNC" align="right">
+
+The application provides methods to directly pull all settigns from the remote
+folder location, and push settings from the local VirtualDJ folder. Additionally,
+the application allows the user to save configuration which restarts the
+associated Windows service.
+
+The Windows service associated with the KRNC Ranch Hand is accessible through the
+Windows system tray with the KRNC icon. From this tray icon, the management app
+can be opened and the service can be stopped as well.
+
 ---
 
 ### Brief History

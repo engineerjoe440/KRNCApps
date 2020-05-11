@@ -15,14 +15,15 @@ import win32serviceutil
 import servicemanager
 import win32event
 import win32service
-import win32file
 import win32con
 import configparser
 import traceback
 import PySimpleGUIQt as sg
+from watchdog.observers import Observer
+from watchdog.events import PatternMatchingEventHandler
 
 # Import Local Dependencies
-import vdjsettings
+#import vdjsettings
 
 # Define Folder Locations
 progFolder = 'C:\\Program Files (x86)\\StanleySolutions\\KRNC\\RanchHand\\'
@@ -51,15 +52,6 @@ class ConstructorService(win32serviceutil.ServiceFramework):
     _svc_description_ = 'VirtualDJ Settings Sharing Manager - by StanleySolutions'
     
     tray = sg.SystemTray(menu=menu_def, filename=iconfileneg)
-    
-    ACTIONS = {
-      1 : "Created",
-      2 : "Deleted",
-      3 : "Updated",
-      4 : "Renamed",
-      5 : "Renamed"
-    }
-    FILE_LIST_DIRECTORY = 0x0001
     
     kill = False
 
@@ -96,6 +88,67 @@ class ConstructorService(win32serviceutil.ServiceFramework):
                               (self._svc_name_, ''))
         self.main()
 
+##########################################################################
+    # Define Functions to Manage Files
+    
+    # Define Created Method
+    def on_created(event):
+        # Capture Source Path
+        src = event.src_path
+        # Identify Destination Path
+        if self.LOCALFOLDER in src:
+            dst = src.replace( self.LOCALFOLDER, self.REMOTEFOLDER )
+        else:
+            dst = src.replace( self.REMOTEFOLDER, self.LOCALFOLDER )
+        # Perform File Management
+        with open('C:\\Users\\Joe Stanley\\Desktop\\file.txt','w') as fob:
+            fob.write('Created:\n')
+            fob.write(src)
+    
+    # Define Deleted Method
+    def on_deleted(event):
+        # Capture Source Path
+        src = event.src_path
+        # Identify Destination Path
+        if self.LOCALFOLDER in src:
+            dst = src.replace( self.LOCALFOLDER, self.REMOTEFOLDER )
+        else:
+            dst = src.replace( self.REMOTEFOLDER, self.LOCALFOLDER )
+        # Perform File Management
+        with open('C:\\Users\\Joe Stanley\\Desktop\\file.txt','w') as fob:
+            fob.write('Deleted:\n')
+            fob.write(src)
+    
+    # Define Modified Method
+    def on_modified(event):
+        # Capture Source Path
+        src = event.src_path
+        # Identify Destination Path
+        if self.LOCALFOLDER in src:
+            dst = src.replace( self.LOCALFOLDER, self.REMOTEFOLDER )
+        else:
+            dst = src.replace( self.REMOTEFOLDER, self.LOCALFOLDER )
+        # Perform File Management
+        with open('C:\\Users\\Joe Stanley\\Desktop\\file.txt','w') as fob:
+            fob.write('Modified:\n')
+            fob.write(src)
+    
+    # Define Moved Method
+    def on_moved(event):
+        # Capture Source Path
+        src = event.src_path
+        # Identify Destination Path
+        if self.LOCALFOLDER in src:
+            dst = src.replace( self.LOCALFOLDER, self.REMOTEFOLDER )
+        else:
+            dst = src.replace( self.REMOTEFOLDER, self.LOCALFOLDER )
+        # Perform File Management
+        mvdst = event.dest_path
+        with open('C:\\Users\\Joe Stanley\\Desktop\\file.txt','w') as fob:
+            fob.write('Moved:\n')
+            fob.write(src)
+    
+##########################################################################
     def start(self):
         '''
         Mark internal attribute to allow start of service
@@ -106,6 +159,37 @@ class ConstructorService(win32serviceutil.ServiceFramework):
         # Test for Invalid Config File
         if not config.sections():
             self.kill = True
+        # Prepare Observer Settings
+        patterns = '*'
+        ignore_patterns = ''
+        ignore_directories = False
+        case_sensitive = True
+        observe_recursive = True
+        # Prepare Event Handlers
+        self.local_event_handler = PatternMatchingEventHandler(
+                                    patterns,
+                                    ignore_patterns,
+                                    ignore_directories,
+                                    case_sensitive
+                            )
+        self.remote_event_handler = PatternMatchingEventHandler(
+                                    patterns,
+                                    ignore_patterns,
+                                    ignore_directories,
+                                    case_sensitive
+                            )
+        # Set Handler Functions
+        self.local_event_handler.on_created = self.on_created
+        self.local_event_handler.on_deleted = self.on_deleted
+        self.local_event_handler.on_modified = self.on_modified
+        self.local_event_handler.on_moved = self.on_moved
+        self.remote_event_handler.on_created = self.on_created
+        self.remote_event_handler.on_deleted = self.on_deleted
+        self.remote_event_handler.on_modified = self.on_modified
+        self.remote_event_handler.on_moved = self.on_moved
+        # Prepare Observers
+        self.local_observer = Observer()
+        self.remote_observer = Observer()
         # Load Folder Descriptions
         self.LOCALFOLDER = config['RanchHand']['LocalSettings']
         self.REMOTEFOLDER = config['RanchHand']['OneDriveSettings']
@@ -114,24 +198,20 @@ class ConstructorService(win32serviceutil.ServiceFramework):
         print("Remote Folder: {}".format(self.REMOTEFOLDER))
         # Build Directory Handles
         try:
-            self._localDirHandle = win32file.CreateFile(
-              self.LOCALFOLDER,
-              self.FILE_LIST_DIRECTORY,
-              win32con.FILE_SHARE_READ | win32con.FILE_SHARE_WRITE | win32con.FILE_SHARE_DELETE,
-              None,
-              win32con.OPEN_EXISTING,
-              win32con.FILE_FLAG_BACKUP_SEMANTICS,
-              None
-            )
-            self._remoteDirHandle = win32file.CreateFile(
-              self.REMOTEFOLDER,
-              self.FILE_LIST_DIRECTORY,
-              win32con.FILE_SHARE_READ | win32con.FILE_SHARE_WRITE | win32con.FILE_SHARE_DELETE,
-              None,
-              win32con.OPEN_EXISTING,
-              win32con.FILE_FLAG_BACKUP_SEMANTICS,
-              None
-            )
+            # Schedule Observers
+            self.local_observer.schedule(   
+                                            self.local_event_handler,
+                                            self.LOCALFOLDER,
+                                            recursive=observe_recursive
+                                        )
+            self.remote_observer.schedule(
+                                            self.remote_event_handler,
+                                            self.REMOTEFOLDER,
+                                            recursive=observe_recursive
+                                        )
+            # Start Observers
+            self.local_observer.start()
+            self.remote_observer.start()
         except Exception as e:
             print("Failure!")
             print(e)
@@ -144,6 +224,8 @@ class ConstructorService(win32serviceutil.ServiceFramework):
         '''
         self.kill = True
         self.isrunning = False
+        self.local_observer.stop()
+        self.remote_observer.stop()
 
     def main(self):
         '''
@@ -167,49 +249,6 @@ class ConstructorService(win32serviceutil.ServiceFramework):
                         print("Unable to start RanchManager App.")
                         sg.popup_error("Unable to start RanchManager App.",
                             icon=iconfile, background_color='#506c91')
-                # Manage File Moves from Local to Remote
-                ##############################################################
-                # Monitor LOCAL Directory Every Scan
-                results = win32file.ReadDirectoryChangesW (
-                    self._localDirHandle,
-                    1024,
-                    True,
-                    win32con.FILE_NOTIFY_CHANGE_FILE_NAME |
-                     win32con.FILE_NOTIFY_CHANGE_DIR_NAME |
-                     win32con.FILE_NOTIFY_CHANGE_ATTRIBUTES |
-                     win32con.FILE_NOTIFY_CHANGE_SIZE |
-                     win32con.FILE_NOTIFY_CHANGE_LAST_WRITE |
-                     win32con.FILE_NOTIFY_CHANGE_SECURITY,
-                    None,
-                    None
-                )
-                print("pass1")
-                # Iterate Over Results to Perform Necessary Actions
-                for action, file in results:
-                    full_filename = os.path.join(self.LOCALFOLDER, file)
-                    print(full_filename, self.ACTIONS.get(action, "Unknown"))
-##########################################################################
-                # Manage File Moves from Remote to Local
-                ##############################################################
-                # Monitor REMOTE Directory Every Scan
-                results = win32file.ReadDirectoryChangesW (
-                    self._remoteDirHandle,
-                    1024,
-                    True,
-                    win32con.FILE_NOTIFY_CHANGE_FILE_NAME |
-                     win32con.FILE_NOTIFY_CHANGE_DIR_NAME |
-                     win32con.FILE_NOTIFY_CHANGE_ATTRIBUTES |
-                     win32con.FILE_NOTIFY_CHANGE_SIZE |
-                     win32con.FILE_NOTIFY_CHANGE_LAST_WRITE |
-                     win32con.FILE_NOTIFY_CHANGE_SECURITY,
-                    None,
-                    None
-                )
-                print("pass2")
-                # Iterate Over Results to Perform Necessary Actions
-                for action, file in results:
-                    full_filename = os.path.join(self.REMOTEFOLDER, file)
-                    print(full_filename, self.ACTIONS.get(action, "Unknown"))
 ##########################################################################
         except Exception as e:
             print("An Error Occurred and Service Died.")
