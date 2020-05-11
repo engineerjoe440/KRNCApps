@@ -51,7 +51,7 @@ locations of interest. These three folders are the local VirtualDJ folder, the
 remote (cloud-drive folder) VirtualDJ folder, and the cloud-drive folder where
 music files are stored.
 
-<img src="https://github.com/engineerjoe440/KRNCApps/blob/master/common/images/RanchHandApp.png" width="100" alt="KRNC" align="right">
+<img src="https://github.com/engineerjoe440/KRNCApps/blob/master/common/images/RanchHandApp.png">
 
 The application provides methods to directly pull all settigns from the remote
 folder location, and push settings from the local VirtualDJ folder. Additionally,
