@@ -34,16 +34,17 @@ and as such, the installer will perform the folder construction that is required
   ├─── Program Files (x86)
        └─── StanleySolutions
             └─── KRNC
+                 ├─── KRNC.png
+                 ├─── KRNCnegative.png
+                 ├─── KRNC.ico
+                 ├─── KRNCnegative.ico
+                 │
                  └─── RanchHand
                       ├─── RanchHand.exe
                       ├─── RanchHandService.exe
                       │
                       └─── images
-                           ├─── help.png
-                           ├─── KRNC.png
-                           ├─── KRNCnegative.png
-                           ├─── KRNC.ico
-                           └─── KRNCnegative.ico
+                           └─── help.png
 ```
 
 The Ranch Hand management app is accessible from the system tray and supports a
