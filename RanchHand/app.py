@@ -108,6 +108,8 @@ window = sg.Window('KRNC Ranch Hand', mainlayout, icon=icon)
 def app():
     global window
     window.finalize()
+    # Print KRNC Welcome Message
+    print("Welcome Home.")
     # Test for Valid Configuration File
     if not config.sections():
         print("No valid Ranch Hand configuration file...",

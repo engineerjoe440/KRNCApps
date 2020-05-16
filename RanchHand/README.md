@@ -36,6 +36,7 @@ and as such, the installer will perform the folder construction that is required
             └─── KRNC
                  └─── RanchHand
                       ├─── RanchHand.exe
+                      ├─── RanchHandService.exe
                       │
                       └─── images
                            ├─── help.png
@@ -70,8 +71,8 @@ below.
 | Control Feature       | Description                                                                                                                                                          | Automated Service Restart? |
 |-----------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------|
 | Save Configuration    | Saves the configured directory locations, restarts the RanchHand service to appropriately monitor for changes.                                                       | Yes                        |
-| Push VDJ Settings Now | Push the VirtualDJ settings from the local storage folder to the remote cloud drive service folder with generic string replacement.                                  | No                         |
-| Pull VDJ Settings Now | Pull the VirtualDJ settings from the remote cloud service folder to the local storage folder replacing generic strings with the appropriate local folder references. | No                         |
+| Push VDJ Settings Now | Push the VirtualDJ settings from the local storage folder to the remote cloud drive service folder with generic string replacement.                                  | No, not needed             |
+| Pull VDJ Settings Now | Pull the VirtualDJ settings from the remote cloud service folder to the local storage folder replacing generic strings with the appropriate local folder references. | No, not needed             |
 
 ---
 
