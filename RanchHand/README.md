@@ -49,7 +49,7 @@ The Ranch Hand management app is accessible from the system tray and supports a
 small set of settings that describe the location of the three primary folder
 locations of interest. These three folders are the local VirtualDJ folder, the
 remote (cloud-drive folder) VirtualDJ folder, and the cloud-drive folder where
-music files are stored.
+music files (*.mp3, *.wav, etc.) are stored.
 
 <img src="https://github.com/engineerjoe440/KRNCApps/blob/master/common/images/RanchHandApp.png">
 
@@ -61,6 +61,17 @@ associated Windows service.
 The Windows service associated with the KRNC Ranch Hand is accessible through the
 Windows system tray with the KRNC icon. From this tray icon, the management app
 can be opened and the service can be stopped as well.
+
+## Control Features
+As mentioned, a couple control options are available for configuration with the
+graphical RanchHand application. These options are described in the detailed table
+below.
+
+| Control Feature       | Description                                                                                                                                                          | Automated Service Restart? |
+|-----------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------|
+| Save Configuration    | Saves the configured directory locations, restarts the RanchHand service to appropriately monitor for changes.                                                       | Yes                        |
+| Push VDJ Settings Now | Push the VirtualDJ settings from the local storage folder to the remote cloud drive service folder with generic string replacement.                                  | No                         |
+| Pull VDJ Settings Now | Pull the VirtualDJ settings from the remote cloud service folder to the local storage folder replacing generic strings with the appropriate local folder references. | No                         |
 
 ---
 

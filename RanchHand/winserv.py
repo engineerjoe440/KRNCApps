@@ -88,9 +88,7 @@ class ConstructorService(win32serviceutil.ServiceFramework):
                               (self._svc_name_, ''))
         self.main()
 
-##########################################################################
-    # Define Functions to Manage Files
-    
+#### Define Functions to Manage Files ####################################
     # Define Created Method
     def on_created(event):
         # Capture Source Path
@@ -227,11 +225,11 @@ class ConstructorService(win32serviceutil.ServiceFramework):
         self.local_observer.stop()
         self.remote_observer.stop()
 
+##########################################################################
     def main(self):
         '''
         Main body method called when started
         '''
-##########################################################################
         try:
             while not self.kill:
                 # Monitor System Tray
@@ -249,10 +247,10 @@ class ConstructorService(win32serviceutil.ServiceFramework):
                         print("Unable to start RanchManager App.")
                         sg.popup_error("Unable to start RanchManager App.",
                             icon=iconfile, background_color='#506c91')
-##########################################################################
         except Exception as e:
             print("An Error Occurred and Service Died.")
             print(e)
+##########################################################################
 
 # Service Routine Entry Point
 if __name__ == '__main__':
