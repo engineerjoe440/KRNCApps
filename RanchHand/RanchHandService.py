@@ -43,6 +43,8 @@ def look_up_state( enum_state ):
 
 # Import Standard Python Dependencies
 import os, sys
+import re
+import psutil
 import socket
 import subprocess
 import win32serviceutil
@@ -53,6 +55,8 @@ import win32service
 import win32con
 import configparser
 import traceback
+from logging.handlers import TimedRotatingFileHandler
+import logging
 import PySimpleGUIQt as sg
 from watchdog.observers import Observer
 from watchdog.events import PatternMatchingEventHandler
@@ -77,6 +81,20 @@ if not os.path.exists(iconfile):
 
 # Define Menu Options
 menu_def = ['BLANK', ['Configuration', 'Exit']]
+
+# Define Kill Process Function
+def kill_proc():
+    """ Simple method to kill this process """
+    proc = subprocess.Popen('sc queryex {}'.format(__svc_name__),
+        stdout=subprocess.PIPE,stderr=subprocess.STDOUT,shell=True)
+    stdout,stderr = proc.communicate()
+    # Find PID from STDOUT
+    criteria = re.compile(r'PID *: (\d{2,8})')
+    PID = re.findall(criteria, stdout.decode('utf-8'))[0]
+    print("Killing RanchHand service with PID: {}".format(PID))
+    # Kill PID
+    p = psutil.Process( int(PID) )
+    p.kill()
 
 # Define Primary Windows Service Class
 class ConstructorService(win32serviceutil.ServiceFramework):
@@ -104,6 +122,11 @@ class ConstructorService(win32serviceutil.ServiceFramework):
         win32serviceutil.ServiceFramework.__init__(self, args)
         self.hWaitStop = win32event.CreateEvent(None, 0, 0, None)
         socket.setdefaulttimeout(10)
+        log_file_path = dataFolder + "service.log"
+        self.logger = logging.getLogger("RanchHandLogger")
+        self.logger.setLevel(logging.DEBUG)
+        handler = logging.handlers.RotatingFileHandler(log_file_path)
+        self.logger.addHandler(handler)
 
     def SvcStop(self):
         '''
@@ -111,12 +134,14 @@ class ConstructorService(win32serviceutil.ServiceFramework):
         '''
         self.stop()
         self.ReportServiceStatus(win32service.SERVICE_STOP_PENDING)
+        kill_proc()
         win32event.SetEvent(self.hWaitStop)
 
     def SvcDoRun(self):
         '''
         Called when the service is asked to start
         '''
+        self.logger.info("RanchHand Service Run Start.")
         self.start()
         servicemanager.LogMsg(servicemanager.EVENTLOG_INFORMATION_TYPE,
                               servicemanager.PYS_SERVICE_STARTED,
@@ -135,9 +160,7 @@ class ConstructorService(win32serviceutil.ServiceFramework):
         else:
             dst = src.replace( self.REMOTEFOLDER, self.LOCALFOLDER )
         # Perform File Management
-        with open('C:\\Users\\Joe Stanley\\Desktop\\file.txt','w') as fob:
-            fob.write('Created:\n')
-            fob.write(src)
+        self.logger.info(f'Created: {src}')
     
     # Define Deleted Method
     def on_deleted(self, event):
@@ -150,9 +173,7 @@ class ConstructorService(win32serviceutil.ServiceFramework):
         else:
             dst = src.replace( self.REMOTEFOLDER, self.LOCALFOLDER )
         # Perform File Management
-        with open('C:\\Users\\Joe Stanley\\Desktop\\file.txt','w') as fob:
-            fob.write('Deleted:\n')
-            fob.write(src)
+        self.logger.info(f'Deleted: {src}')
     
     # Define Modified Method
     def on_modified(self, event):
@@ -165,9 +186,7 @@ class ConstructorService(win32serviceutil.ServiceFramework):
         else:
             dst = src.replace( self.REMOTEFOLDER, self.LOCALFOLDER )
         # Perform File Management
-        with open('C:\\Users\\Joe Stanley\\Desktop\\file.txt','w') as fob:
-            fob.write('Modified:\n')
-            fob.write(src)
+        self.logger.info(f'Modified: {src}')
     
     # Define Moved Method
     def on_moved(self, event):
@@ -185,9 +204,7 @@ class ConstructorService(win32serviceutil.ServiceFramework):
         else:
             dst = src.replace( self.REMOTEFOLDER, self.LOCALFOLDER )
         # Perform File Management
-        with open('C:\\Users\\Joe Stanley\\Desktop\\file.txt','w') as fob:
-            fob.write('Moved:\n')
-            fob.write(src)
+        self.logger.info(f'Moved: {src} to {mvdst}')
     
 ##########################################################################
     def start(self):
@@ -236,7 +253,9 @@ class ConstructorService(win32serviceutil.ServiceFramework):
         self.REMOTEFOLDER = config['RanchHand']['OneDriveSettings']
         self.ONEDRIVEMX = config['RanchHand']['OneDriveMusic']
         print("Local Folder: {}".format(self.LOCALFOLDER))
+        self.logger.info(f'Local VDJ Folder: {self.LOCALFOLDER}')
         print("Remote Folder: {}".format(self.REMOTEFOLDER))
+        self.logger.info(f'Remote VDJ Folder: {self.REMOTEFOLDER}')
         # Build Directory Handles
         try:
             # Schedule Observers
@@ -255,8 +274,10 @@ class ConstructorService(win32serviceutil.ServiceFramework):
             self.remote_observer.start()
         except Exception as e:
             print("Failure!")
+            logger.error("Failed to start!")
             print(e)
         print("Startup Successful.")
+        logger.info("Startup Successfull")
         self.isrunning = True
 
     def stop(self):
@@ -297,6 +318,9 @@ class ConstructorService(win32serviceutil.ServiceFramework):
 
 # Service Routine Entry Point
 if __name__ == '__main__':
+    if 'kill' in sys.argv:
+        kill_proc()
+        sys.exit(0)
     ConstructorService.parse_command_line()
 
 # END
