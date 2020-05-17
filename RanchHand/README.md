@@ -83,8 +83,8 @@ installer tool, or the Ranch Hand application itself, but the service can also b
 managed directly in a console. The full list of control options is listed below.
 
 ```console
-$> RanchHandService.py
-Usage: 'RanchHandService.py [options] install|update|remove|start [...]|stop|restart [...]|debug [...]'
+$> RanchHandService.exe
+Usage: 'RanchHandService.exe [options] install|update|remove|start [...]|stop|restart [...]|debug [...]'
 Options for 'install' and 'update' commands only:
  --username domain\username : The Username the service is to run under
  --password password : The password for the username
