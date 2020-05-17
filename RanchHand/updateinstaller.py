@@ -20,6 +20,7 @@ import time
 import ctypes
 import psutil
 import zipfile
+import threading
 import traceback
 import subprocess
 import win32com.client
@@ -27,6 +28,7 @@ import win32serviceutil
 import PySimpleGUI as sg
 from pathlib import Path
 from urllib import request
+from alive_progress import alive_bar
 
 # Define Boolean Control
 serviceInstalled = False
@@ -73,6 +75,43 @@ def elevateUAC( func ):
     # Return Inner Function
     return( inner )
 
+# Define Simple Function to Clear Previous Line
+def clear_line():
+    sys.stdout.write("\033[F") #back to previous line
+    sys.stdout.write("\033[K") #clear line
+
+# Define Spinner
+class Spinner:
+    busy = False
+    delay = 0.1
+
+    @staticmethod
+    def spinning_cursor():
+        while 1: 
+            for cursor in '|/-\\': yield cursor
+
+    def __init__(self, delay=None):
+        self.spinner_generator = self.spinning_cursor()
+        if delay and float(delay): self.delay = delay
+
+    def spinner_task(self):
+        while self.busy:
+            sys.stdout.write(next(self.spinner_generator))
+            sys.stdout.flush()
+            time.sleep(self.delay)
+            sys.stdout.write('\b')
+            sys.stdout.flush()
+
+    def __enter__(self):
+        self.busy = True
+        threading.Thread(target=self.spinner_task).start()
+
+    def __exit__(self, exception, value, tb):
+        self.busy = False
+        time.sleep(self.delay)
+        if exception is not None:
+            return False
+
 # Define Function to Close Active RanchHand App and Stop Windows Service
 def close_and_stop():
     global serviceInstalled
@@ -97,7 +136,17 @@ def close_and_stop():
                 win32serviceutil.StopService(servicename)
                 print("Stopped.")
             except:
-                print("Failed to stop service. Please try again.")
+                print("Failed to stop service. Killing Instead.")
+                # Request PID
+                proc = subprocess.Popen('sc queryex {}'.format(servicename),
+                    stdout=subprocess.PIPE,stderr=subprocess.STDOUT,shell=True)
+                stdout,stderr = proc.communicate()
+                # Find PID from STDOUT
+                criteria = re.compile(r'PID *: (\d{2,8})')
+                PID = re.findall(criteria, stdout.decode('utf-8'))[0]
+                # Kill PID
+                p = psutil.Process( int(PID) )
+                p.kill()
 
 # Define Function to Generate Folder Paths
 def build_folders():
@@ -183,14 +232,16 @@ def windows_service():
         args = '"{}" update'.format(service_file)
         fail = subprocess.call(args, shell=True)
         if fail:
-            print("Failed to update RanchHandService.")
+            print("Failed to update RanchHandService.\n")
+            clear_line()
             sys.exit(1)
         # Start Service
         try:
             win32serviceutil.StartService(servicename)
             print("Started RanchHandService")
         except:
-            print("Failed to start RanchHandService")
+            print("Failed to start RanchHandService.\n")
+            clear_line()
             sys.exit(1)
     # Managed Windows Service Not Already Installed
     else:
@@ -240,20 +291,25 @@ def windows_service():
                                         )
                 # Validate Password
                 if pswd == '':
+                    clear_line()
                     print("Invalid password provided, aborting.")
                     sys.exit(1)
                 command = ('{} --username ".\\{}" --password {} --startup '
                             +'auto install'.format(service_file, username, pswd))
+                clear_line()
                 retcode = subprocess.call(command, shell=True)
                 if retcode:
+                    clear_line()
                     print("An error occurred while installing service.")
                     sys.exit(1)
             else:
                 # Install Python
                 install_python()
+                clear_line()
                 command = "{} --startup auto install".format(service_file)
                 retcode = subprocess.call(command, shell=True)
                 if retcode:
+                    clear_line()
                     print("An error occurred while installing service.")
                     sys.exit(1)
         
@@ -262,32 +318,45 @@ def windows_service():
 # Define Main Function
 @elevateUAC
 def main():
-    # Close and Stop RanchHand App and Service
-    close_and_stop()
-    # Build Folders
-    build_folders()
-    # Make Link
-    make_link()
-    # Identify Requirements
-    try:
-        print("(i) Identifying requirements...")
-        requires = read_requirements()
-    except Exception:
-        print("(e) Unable to open web-handle for requirements file.")
-        time.sleep(5)
-        traceback.print_exc()
-        sys.exit(1)
-    # Download Requirements
-    for requirement in requires:
-        print("(i) Downloading Requirement:", os.path.basename(requirement[0]))
+    # Start Status Progress Bar
+    prog_bar_count = 5
+    with alive_bar(prog_bar_count,spinner='classic') as progress_bar:
+        # Close and Stop RanchHand App and Service
+        progress_bar('stopping service and app')
+        close_and_stop()
+        # Build Folders
+        progress_bar('building folders')
+        build_folders()
+        # Make Link
+        progress_bar('making shortcut link')
+        make_link()
+        # Identify Requirements
         try:
-            download_requirement( requirement )
+            progress_bar('identifying required resources')
+            requires = read_requirements()
+            progress_bar('preparing to download requirements')
         except Exception:
-            print("(e) Failed to download requirement:",
-                    os.path.basename(requirement[0]))
+            print("(e) Unable to open web-handle for requirements file.")
+            time.sleep(5)
             traceback.print_exc()
+            sys.exit(1)
+    #clear_line()
+    # Manage Resource Download
+    with alive_bar(len(requires),spinner='classic') as progress_bar:
+        # Download Requirements
+        for requirement in requires:
+            print("(i) Downloading Requirement:", os.path.basename(requirement[0]))
+            try:
+                download_requirement( requirement )
+                progress_bar()
+            except Exception:
+                print("(e) Failed to download requirement:",
+                        os.path.basename(requirement[0]))
+                traceback.print_exc()
     # Install (or update) Windows Service
-    windows_service()
+    with Spinner():
+        windows_service()
+    clear_line()
     
     # Remark on Completion
     print("\n(i) KRNC RanchHand Installation/Update Complete!")
