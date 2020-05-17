@@ -37,6 +37,13 @@ The various applications in this repository are described as follows:
     
 ---
 
+Want to contribute? We'd love to see you get involved! Drop us a note, or buy me a coffee to get involved. We're a little weak in testing and documentation right now, so if you're passionate in those areas, we'd really be happy to see your contributions, but anything would be great!
+[<img align="right" src="https://cdn.buymeacoffee.com/buttons/default-orange.png" width="217px" height="51x">](https://www.buymeacoffee.com/engineerjoe440)
+
+Thank you for taking the time to take a quick look!
+
+---
+
 ### Brief History
 KRNC, a ficticious broadcast radio station is a radio station for everyone, it is
 everyone's own station. "Your music lives here," the musical positioning statement
