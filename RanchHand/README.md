@@ -31,7 +31,7 @@ and as such, the installer will perform the folder construction that is required
   │              └─── RanchHand
   │                   └── config.ini
   │
-  ├─── Program Files (x86)
+  └─── Program Files (x86)
        └─── StanleySolutions
             └─── KRNC
                  ├─── KRNC.png
