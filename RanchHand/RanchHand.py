@@ -8,14 +8,16 @@ By: Joe Stanley
 """
 
 # Capture Version from Service Application
-from RanchHandService import get_version
+from RanchHandService import get_version, get_service_info, look_up_state
 __version__ = get_version()
 
 # Import Required Dependencies
 import os
+import sys
 import time
 import PySimpleGUI as sg
 import webbrowser
+import subprocess
 import configparser
 import win32serviceutil
 from pathlib import Path
@@ -37,21 +39,11 @@ sepWidth = 23
 titleWidth = 74
 outputWidth = 140
 outputHeight = 7
-servicename = 'RanchHand'
+servicename = get_service_info()['name']
 helpdoc = 'https://github.com/engineerjoe440/KRNCApps/blob/master/RanchHand/README.md'
 configfile = 'C:\\ProgramData\\StanleySolutions\\KRNC\\RanchHand\\config.ini'
 programFile = 'C:\\Program Files (x86)\\StanleySolutions\\KRNC'
-
-# Define Service State Lookup
-serviceState = {
-    1 : 'stopped',
-    2 : 'start-pending',
-    3 : 'stop-pending',
-    4 : 'running',
-    5 : 'continue-pending',
-    6 : 'pause-pending',
-    7 : 'paused',
-}
+updateEXE = '"' + programFile + '\\RanchHand\\updateinstaller.exe"'
 
 #######################################################################################
 # Add Custom Theme in-line with KRNC Coloring
@@ -99,8 +91,9 @@ spcrCol = [[sg.Text(' '*sepWidth)]]
 mainlayout = [
     [sg.Text('Ranch Hand - A VirtualDJ Shared Settings Manager',
         font=('TkDefaultFont',14),size=(titleWidth,1)),
-        sg.Button('',key='help',image_filename=help,image_size=(25, 25),
-            image_subsample=85, border_width=0)],
+        sg.ButtonMenu('',['',['Documentation','Update Ranch Hand']], 
+            key='help', image_filename=help, image_size=(25, 25), 
+            image_subsample=3, border_width=0)],
     [sg.Column(inputsCol), sg.Column(spcrCol), sg.Column(contCol)],
     [sg.Output(size=(outputWidth, outputHeight),font=('TkDefaultFont',8))],
 ]
@@ -141,7 +134,26 @@ def app():
             break
         # Open Help Page (GitHub Markdown)
         elif event == 'help':
-            webbrowser.open(helpdoc)
+            if values['help'] == 'Documentation':
+                webbrowser.open(helpdoc)
+            elif values['help'] == 'Update Ranch Hand':
+                # Confirm Desire to Update
+                response = sg.popup_yes_no('Are you sure you want to update now?',
+                                ('Updating now will stopp the application and will'
+                                    +' stop any active file synchronization tasks '
+                                    +'that are currently active.'),
+                                ('It is reccomended that VirtualDJ be closed during'
+                                    +' Ranch Hand updates.'),
+                                title='Confirm Update', icon=icon)
+                if response.lower() != 'yes':
+                    continue
+                # Call Updater in Subproccess
+                if not os.path.exists( updateEXE ):
+                    subprocess.Popen('python .\\updateinstaller.py', shell=True)
+                else:
+                    subprocess.Popen(updateEXE, shell=True)
+                # Exit Application
+                sys.exit(1)
         # Manage Save/Push/Pull Settings from OneDrive
         elif event in ['save', 'pull', 'push']:
             # Validate all Configuration Before Restarting Service
@@ -183,6 +195,7 @@ def app():
                     config.write(conffile)
                 # Indicate Success
                 print("Successfully updated configuration.")
+                window.Refresh()
                 # Copy Local Files Over Remote
                 try:
                     # Move Folders
@@ -190,34 +203,42 @@ def app():
                         srcpath = config['RanchHand']['LocalSettings'],
                         dstpath = config['RanchHand']['OneDriveSettings'],
                         srcstring = config['RanchHand']['LocalSettings'],
-                        dststring = vdj.generic_path
+                        dststring = vdj.generic_path,
+                        window = window
                     )
                 except Exception as e:
                     print("Attempt to mirror local settings to OneDrive failed.")
                     print(e)
+                window.Refresh()
                 # Manage the Windows Service
                 try:
                     serviceSta = win32serviceutil.QueryServiceStatus(servicename)
                 except:
                     print("KRNC Ranch Hand Service is Not Installed!")
+                    window.Refresh()
                 else:
                     # Look Up Current State from LUT Dictionary
-                    curState = serviceState[ serviceSta[1] ]
-                    print("KRNC Ranch Hand Service is: {}".format(curState))
+                    curState = look_up_state( serviceSta[1] )
+                    print("KRNC Ranch Hand Service is: {}".format(curState.upper()))
+                    window.Refresh()
                     if curState != 'stopped':
                         print("Stopping Service...")
+                        window.Refresh()
                         # Stop Service
                         try:
                             win32serviceutil.StopService(servicename)
                             print("Stopped.")
+                            window.Refresh()
                         except:
                             print("Failed to stop service. Please try again.")
                             continue
                     # Start the Windows Service
                     print("Starting Service...")
+                    window.Refresh()
                     try:
                         win32serviceutil.StartService(servicename)
                         print("Started.")
+                        window.Refresh()
                     except:
                         print("Failed to start service. Please try again.")
                         continue # in case more code is added later
@@ -261,7 +282,10 @@ def app():
 #######################################################################################
 # Run App if Main
 if __name__ == '__main__':
-    app()
+    try:
+        app()
+    except Exception as e:
+        print("Exception Occured:", e)
     
 window.close()
 

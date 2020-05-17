@@ -29,7 +29,7 @@ def folderisempty( folderpath ):
     return([f for f in os.listdir(folderpath) if not f.startswith('.')] == [])
 
 # Define Modify and Move Function for Single Files
-def modify_move_file(srcfpath, dstfpath, srcstring, dststring):
+def modify_move_file(srcfpath, dstfpath, srcstring, dststring, window=None):
     # Format Source and Destination Folders with "Windows" Backslashes
     srcfpath = srcfpath.replace('/','\\')
     dstfpath = dstfpath.replace('/','\\')
@@ -37,9 +37,13 @@ def modify_move_file(srcfpath, dstfpath, srcstring, dststring):
     dststring = dststring.replace('/','\\')
     print("Resolving: '{}'  to: '{}'".format(srcfpath, dstfpath))
     print("   - '{}' replaced with '{}' placeholder".format(srcstring, dststring))
+    if window != None:
+        window.Refresh()
     # Validate Not License (Never Changes)
     if srcfpath.endswith('license.dat'):
         print("Skipping 'license.dat' File")
+        if window != None:
+            window.Refresh()
     # Check for Monitored File Type
     elif os.path.basename(srcfpath).split('.')[-1] in monitoredFiles:
         try:
@@ -56,15 +60,19 @@ def modify_move_file(srcfpath, dstfpath, srcstring, dststring):
                 shutil.copy(srcfpath,dstfpath)
             except:
                 print("Warning - Skipping")
+                if window != None:
+                    window.Refresh()
     # Un-manageable File Type
     else:
         try:
             shutil.copy(srcfpath,dstfpath)
         except:
             print("Warning - Skipping")
+            if window != None:
+                window.Refresh()
 
 # Define Modify and Move Function for Entire Folders
-def modify_move_folders(srcpath, dstpath, srcstring, dststring):
+def modify_move_folders(srcpath, dstpath, srcstring, dststring, window=None):
     # Walk over Source Path
     for dname, dirs, files in os.walk(srcpath):
         for fname in files:
@@ -72,7 +80,7 @@ def modify_move_folders(srcpath, dstpath, srcstring, dststring):
             srcfpath = os.path.join(dname, fname)
             dstfpath = os.path.join(dname, fname).replace(srcpath,dstpath)
             # Modify and Move File
-            modify_move_file(srcfpath, dstfpath, srcstring, dststring)
+            modify_move_file(srcfpath, dstfpath, srcstring, dststring, window)
 
 
 # END

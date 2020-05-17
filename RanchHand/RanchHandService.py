@@ -13,6 +13,34 @@ __version__ = "0.1"
 def get_version():
     return(__version__)
 
+# Describe Service Info
+__svc_name__ = 'RanchHand'
+__svc_display_name__ = 'KRNC Ranch Hand'
+__svc_description__ = 'VirtualDJ Settings Sharing Manager - by StanleySolutions'
+
+def get_service_info():
+    return({
+        'name'  : __svc_name__,
+        'disp'  : __svc_display_name__,
+        'desc'  : __svc_description__
+    })
+
+
+# Define Service State Lookup
+serviceState = {
+    1 : 'stopped',
+    2 : 'start-pending',
+    3 : 'stop-pending',
+    4 : 'running',
+    5 : 'continue-pending',
+    6 : 'pause-pending',
+    7 : 'paused',
+}
+
+def look_up_state( enum_state ):
+    return( serviceState[ enum_state ] )
+
+
 # Import Standard Python Dependencies
 import os, sys
 import socket
@@ -54,9 +82,9 @@ menu_def = ['BLANK', ['Configuration', 'Exit']]
 class ConstructorService(win32serviceutil.ServiceFramework):
     '''Base class to create winservice in Python'''
 
-    _svc_name_ = 'RanchHand'
-    _svc_display_name_ = 'KRNC Ranch Hand'
-    _svc_description_ = 'VirtualDJ Settings Sharing Manager - by StanleySolutions'
+    _svc_name_ = __svc_name__
+    _svc_display_name_ = __svc_display_name__
+    _svc_description_ = __svc_description__
     
     tray = sg.SystemTray(menu=menu_def, filename=iconfileneg)
     

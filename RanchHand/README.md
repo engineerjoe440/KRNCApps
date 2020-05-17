@@ -42,6 +42,7 @@ and as such, the installer will perform the folder construction that is required
                  └─── RanchHand
                       ├─── RanchHand.exe
                       ├─── RanchHandService.exe
+                      ├─── updateinstaller.exe
                       │
                       └─── images
                            └─── help.png
@@ -66,14 +67,38 @@ can be opened and the service can be stopped as well.
 
 ## Control Features
 As mentioned, a couple control options are available for configuration with the
-graphical RanchHand application. These options are described in the detailed table
+graphical Ranch Hand application. These options are described in the detailed table
 below.
 
 | Control Feature       | Description                                                                                                                                                          | Automated Service Restart? |
 |-----------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------|
-| Save Configuration    | Saves the configured directory locations, restarts the RanchHand service to appropriately monitor for changes.                                                       | Yes                        |
+| Save Configuration    | Saves the configured directory locations, restarts the Ranch Hand service to appropriately monitor for changes.                                                       | Yes                        |
 | Push VDJ Settings Now | Push the VirtualDJ settings from the local storage folder to the remote cloud drive service folder with generic string replacement.                                  | No, not needed             |
 | Pull VDJ Settings Now | Pull the VirtualDJ settings from the remote cloud service folder to the local storage folder replacing generic strings with the appropriate local folder references. | No, not needed             |
+
+
+## Service Command Line Features
+The Ranch Hand windows service is typically managed by means of the update and
+installer tool, or the Ranch Hand application itself, but the service can also be
+managed directly in a console. The full list of control options is listed below.
+
+```console
+$> RanchHandService.py
+Usage: 'RanchHandService.py [options] install|update|remove|start [...]|stop|restart [...]|debug [...]'
+Options for 'install' and 'update' commands only:
+ --username domain\username : The Username the service is to run under
+ --password password : The password for the username
+ --startup [manual|auto|disabled|delayed] : How the service starts, default = manual
+ --interactive : Allow the service to interact with the desktop.
+ --perfmonini file: .ini file to use for registering performance monitor data
+ --perfmondll file: .dll file to use when querying the service for
+   performance data, default = perfmondata.dll
+Options for 'start' and 'stop' commands only:
+ --wait seconds: Wait for the service to actually start or stop.
+                 If you specify --wait with the 'stop' option, the service
+                 and all dependent services will be stopped, each waiting
+                 the specified period.
+```
 
 ---
 
