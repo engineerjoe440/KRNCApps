@@ -30,6 +30,8 @@ import PySimpleGUI as sg
 from pathlib import Path
 from alive_progress import alive_bar
 
+print("Executable Location:", sys.executable)
+
 # Define Boolean Control
 serviceInstalled = False
 
@@ -162,8 +164,8 @@ def make_link():
 # Define Function to Read Requirements from Web-Based CSV
 def read_requirements():
     # Open File from Web to Identify Requirements
-    with request.urlopen(web_requirements_file) as requires:
-        requirements = requires.read().decode('utf-8').split('\n')
+    requires = requests.get(web_requirements_file)
+    requirements = requires.content.decode('utf-8').split('\n')
     # Build Descriptive Structure
     for ind, row in enumerate(requirements):
         requirements[ind] = row.split(',')
@@ -174,13 +176,15 @@ def download_requirement( requirement ):
     # Break Out Constituent Elements
     localPath, url = requirement
     # Open File from Web for Reading
-    if url != 'null':
+    if (url != 'null') and (localPath != sys.executable):
         resp = requests.get( url )
         with open(localPath, 'wb') as localObj:
             localObj.write( resp.content )
-    else:
+    elif url != 'null':
         print("(w) Unable to locate remote URL for requirement:",
                 os.path.basename(localPath))
+    else:
+        print("Update/Installer already installed. Ignoring.")
 
 # Define Function to "Ask Windows" Where Python Executable Lives
 def where_python():
@@ -213,6 +217,7 @@ def install_python():
     retcode = subprocess.call(command, shell=True)
     if retcode:
         print("An error occurred when adding Python to PATH.")
+        time.sleep(5)
         sys.exit(1)
 
 # Define Function to Install/Update Windows Service
@@ -225,6 +230,7 @@ def windows_service():
         if fail:
             print("Failed to update RanchHandService.\n")
             clear_line()
+            time.sleep(5)
             sys.exit(1)
         # Start Service
         try:
@@ -233,6 +239,7 @@ def windows_service():
         except:
             print("Failed to start RanchHandService.\n")
             clear_line()
+            time.sleep(5)
             sys.exit(1)
     # Managed Windows Service Not Already Installed
     else:
@@ -284,6 +291,7 @@ def windows_service():
                 if pswd == '':
                     clear_line()
                     print("Invalid password provided, aborting.")
+                    time.sleep(5)
                     sys.exit(1)
                 command = ('{} --username ".\\{}" --password {} --startup '
                             +'auto install'.format(service_file, username, pswd))
@@ -292,6 +300,7 @@ def windows_service():
                 if retcode:
                     clear_line()
                     print("An error occurred while installing service.")
+                    time.sleep(5)
                     sys.exit(1)
             else:
                 # Install Python
@@ -302,6 +311,7 @@ def windows_service():
                 if retcode:
                     clear_line()
                     print("An error occurred while installing service.")
+                    time.sleep(5)
                     sys.exit(1)
         
 
@@ -328,8 +338,8 @@ def main():
             progress_bar('preparing to download requirements')
         except Exception:
             print("(e) Unable to open web-handle for requirements file.")
-            time.sleep(5)
             traceback.print_exc()
+            time.sleep(5)
             sys.exit(1)
     #clear_line()
     # Manage Resource Download

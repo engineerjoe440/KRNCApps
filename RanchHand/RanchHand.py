@@ -152,8 +152,6 @@ def app():
                     subprocess.Popen('python .\\updateinstaller.py', shell=True)
                 else:
                     subprocess.Popen(updateEXE, shell=True)
-                # Exit Application
-                sys.exit(1)
         # Manage Save/Push/Pull Settings from OneDrive
         elif event in ['save', 'pull', 'push']:
             # Validate all Configuration Before Restarting Service

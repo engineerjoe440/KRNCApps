@@ -62,7 +62,7 @@ from watchdog.observers import Observer
 from watchdog.events import PatternMatchingEventHandler
 
 # Import Local Dependencies
-#import vdjsettings
+import vdjsettings as vdj
 
 # Define Folder Locations
 progFolder = 'C:\\Program Files (x86)\\StanleySolutions\\KRNC\\RanchHand\\'
@@ -70,8 +70,8 @@ dataFolder = 'C:\\ProgramData\\StanleySolutions\\KRNC\\RanchHand\\'
 
 # Define File Locations
 configfile  = dataFolder + 'config.ini'
-iconfile    = progFolder + 'images\\KRNC.ico'
-iconfileneg = progFolder + 'images\\KRNCnegative.ico'
+iconfile    = progFolder.replace('\\KRNC\\RanchHand\\','KRNC.ico')
+iconfileneg = progFolder.replace('\\KRNC\\RanchHand\\','KRNCnegative.ico')
 configapp   = progFolder + 'RanchHand.exe'
 
 # Load Default (dev) Icon if `iconfile` Doesn't Exist
@@ -82,12 +82,14 @@ if not os.path.exists(iconfile):
 # Define Menu Options
 menu_def = ['BLANK', ['Configuration', 'Exit']]
 
-log_file_path = dataFolder + "service.log"
-logger = logging.getLogger("RanchHandLogger")
-logger.setLevel(logging.DEBUG)
-handler = logging.handlers.RotatingFileHandler(log_file_path)
-logger.addHandler(handler)
-logger.info("RanchHandService")
+# Start Log if Main
+if __name__ == '__main__':
+    log_file_path = dataFolder + "service.log"
+    logger = logging.getLogger("RanchHandLogger")
+    logger.setLevel(logging.DEBUG)
+    handler = logging.handlers.RotatingFileHandler(log_file_path)
+    logger.addHandler(handler)
+    logger.info("RanchHandService")
 
 # Define Kill Process Function
 def kill_proc():
@@ -117,6 +119,11 @@ class ConstructorService(win32serviceutil.ServiceFramework):
     
     tray = sg.SystemTray(menu=menu_def, filename=iconfileneg)
     
+    ignore_created = ''
+    ignore_modified = ''
+    ignore_deleted = ''
+    ignore_moved = ''
+    
     kill = False
 
     @classmethod
@@ -124,14 +131,17 @@ class ConstructorService(win32serviceutil.ServiceFramework):
         '''
         ClassMethod to parse the command line
         '''
-        sys.frozen = 'windows_exe' # Fake py2exe so we can debug
-        if len(sys.argv) == 1:
+        logger.info(sys.argv)
+        if not 'debug' in sys.argv:
+            sys.frozen = 'windows_exe' # Fake py2exe so we can debug
+        if (len(sys.argv) == 1):
+            logger.info("Bootstrapping Service Start")
             servicemanager.Initialize()
             servicemanager.PrepareToHostSingle(cls)
             servicemanager.StartServiceCtrlDispatcher()
         else:
             win32serviceutil.HandleCommandLine(cls)
-        logger.info("attempting to parse...")
+        logger.info("Parsing Command Line Arguments...")
 
     def __init__(self, args):
         '''
@@ -171,51 +181,90 @@ class ConstructorService(win32serviceutil.ServiceFramework):
     def on_created(self, event):
         # Capture Source Path
         src = event.src_path
+        if src == self.ignore_created:
+            self.ignore_created = ''
+            return
         print('New File Created:',src)
         # Identify Destination Path
-        if self.LOCALFOLDER in src:
+        if self.LOCALFOLDER in src.replace('\\','/'):
             dst = src.replace( self.LOCALFOLDER, self.REMOTEFOLDER )
+            srcstr = self.LOCALFOLDER
+            dststr = vdj.generic_path
         else:
             dst = src.replace( self.REMOTEFOLDER, self.LOCALFOLDER )
+            srcstr = vdj.generic_path
+            dststr = self.LOCALFOLDER
+        # Set Ignore Operator
+        self.ignore_created = dst
         # Perform File Management
         self.logger.info(f'Created: {src}')
+        vdj.modify_move_file(
+            srcfpath=src, dstfpath=dst,
+            srcstring=srcstr, dststring=dststr,
+        )
     
     # Define Deleted Method
     def on_deleted(self, event):
         # Capture Source Path
         src = event.src_path
+        if src == self.ignore_deleted:
+            self.ignore_deleted = ''
+            return
         print('Existing File Deleted:',src)
         # Identify Destination Path
-        if self.LOCALFOLDER in src:
+        if self.LOCALFOLDER in src.replace('\\','/'):
             dst = src.replace( self.LOCALFOLDER, self.REMOTEFOLDER )
         else:
             dst = src.replace( self.REMOTEFOLDER, self.LOCALFOLDER )
+        # Set Ignore Operator
+        self.ignore_deleted = dst
         # Perform File Management
         self.logger.info(f'Deleted: {src}')
+        try:
+            os.remove(dst)
+        except:
+            self.logger.warning("A file was deleted in {} that "+
+                "could not be deleted in {}.".format(src,dst))
     
     # Define Modified Method
     def on_modified(self, event):
         # Capture Source Path
         src = event.src_path
+        if src == self.ignore_modified:
+            self.ignore_modified = ''
+            return
         print('Existing File Modified:',src)
         # Identify Destination Path
-        if self.LOCALFOLDER in src:
+        if self.LOCALFOLDER in src.replace('\\','/'):
             dst = src.replace( self.LOCALFOLDER, self.REMOTEFOLDER )
+            srcstr = self.LOCALFOLDER
+            dststr = vdj.generic_path
         else:
             dst = src.replace( self.REMOTEFOLDER, self.LOCALFOLDER )
+            srcstr = vdj.generic_path
+            dststr = self.LOCALFOLDER
+        # Set Ignore Operator
+        self.ignore_modified = dst
         # Perform File Management
         self.logger.info(f'Modified: {src}')
+        vdj.modify_move_file(
+            srcfpath=src, dstfpath=dst,
+            srcstring=srcstr, dststring=dststr,
+        )
     
     # Define Moved Method
     def on_moved(self, event):
         # Capture Source Path
         src = event.src_path
         mvdst = event.dest_path
+        if src == self.ignore_moved:
+            self.ignore_moved = ''
+            return
         print('Existing File Moved:',src)
         # Identify Destination Path
-        if self.LOCALFOLDER in src:
+        if self.LOCALFOLDER in src.replace('\\','/'):
             dst = src.replace( self.LOCALFOLDER, self.REMOTEFOLDER )
-            if self.REMOTEFOLDER in mvdst:
+            if self.REMOTEFOLDER in mvdst.replace('\\','/'):
                 print('Moved to Supported Folder.')
             else:
                 print('Moved out of RanchHand Management Scope')
@@ -268,9 +317,9 @@ class ConstructorService(win32serviceutil.ServiceFramework):
         self.local_observer = Observer()
         self.remote_observer = Observer()
         # Load Folder Descriptions
-        self.LOCALFOLDER = config['RanchHand']['LocalSettings']
-        self.REMOTEFOLDER = config['RanchHand']['OneDriveSettings']
-        self.ONEDRIVEMX = config['RanchHand']['OneDriveMusic']
+        self.LOCALFOLDER = config['RanchHand']['LocalSettings'].replace('\\','/')
+        self.REMOTEFOLDER = config['RanchHand']['OneDriveSettings'].replace('\\','/')
+        self.ONEDRIVEMX = config['RanchHand']['OneDriveMusic'].replace('\\','/')
         print("Local Folder: {}".format(self.LOCALFOLDER))
         self.logger.info(f'Local VDJ Folder: {self.LOCALFOLDER}')
         print("Remote Folder: {}".format(self.REMOTEFOLDER))
@@ -317,10 +366,11 @@ class ConstructorService(win32serviceutil.ServiceFramework):
         try:
             self.logger.info("Internal `main` Method.")
             while not self.kill:
+                self.logger.info("System Tray")
                 # Monitor System Tray
-                menu_item = self.tray.read()
-                print(menu_item)
-                if menu_item == '__TIMEOUT__':
+                menu_item = self.tray.read(timeout=1000)
+                self.logger.info(menu_item)
+                if menu_item in [None, '__TIMEOUT__']:
                     pass
                 elif menu_item == 'Exit':
                     self.kill = True
@@ -339,12 +389,11 @@ class ConstructorService(win32serviceutil.ServiceFramework):
 
 # Service Routine Entry Point
 if __name__ == '__main__':
-    logger.info("Found entry point")
     if 'kill' in sys.argv:
         kill_proc()
         logger.info("Killing service")
         sys.exit(0)
-    logger.info("Entering service")
+    logger.info("Calling Argument Parsing Operation")
     ConstructorService.parse_command_line()
 
 # END

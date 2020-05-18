@@ -29,6 +29,7 @@ and as such, the installer will perform the folder construction that is required
   │    └─── StanleySolutions
   │         └─── KRNC
   │              └─── RanchHand
+                      ├── service.log
   │                   └── config.ini
   │
   └─── Program Files (x86)
@@ -56,7 +57,7 @@ music files (*.mp3, *.wav, etc.) are stored.
 
 <img src="https://github.com/engineerjoe440/KRNCApps/blob/master/common/images/RanchHandApp.png">
 
-The application provides methods to directly pull all settigns from the remote
+The application provides methods to directly pull all settings from the remote
 folder location, and push settings from the local VirtualDJ folder. Additionally,
 the application allows the user to save configuration which restarts the
 associated Windows service.
@@ -80,7 +81,10 @@ below.
 ## Service Command Line Features
 The Ranch Hand windows service is typically managed by means of the update and
 installer tool, or the Ranch Hand application itself, but the service can also be
-managed directly in a console. The full list of control options is listed below.
+managed directly in a console. The standard list of control options is listed below
+as it would otherwise be shown in a console printout. An additional command `--kill`
+is also available, and will identify the PID of the service and force kill it. This
+operation is normally unnecessary, however, it can be useful in debugging.
 
 ```console
 $> RanchHandService.exe
@@ -103,7 +107,7 @@ Options for 'start' and 'stop' commands only:
 ---
 
 ### Brief History
-KRNC, a ficticious broadcast radio station is a radio station for everyone, it is
+KRNC, a fictitious broadcast radio station is a radio station for everyone, it is
 everyone's own station. "Your music lives here," the musical positioning statement
 for the station.
 
