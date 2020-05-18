@@ -82,6 +82,13 @@ if not os.path.exists(iconfile):
 # Define Menu Options
 menu_def = ['BLANK', ['Configuration', 'Exit']]
 
+log_file_path = dataFolder + "service.log"
+logger = logging.getLogger("RanchHandLogger")
+logger.setLevel(logging.DEBUG)
+handler = logging.handlers.RotatingFileHandler(log_file_path)
+logger.addHandler(handler)
+logger.info("RanchHandService")
+
 # Define Kill Process Function
 def kill_proc():
     """ Simple method to kill this process """
@@ -90,11 +97,15 @@ def kill_proc():
     stdout,stderr = proc.communicate()
     # Find PID from STDOUT
     criteria = re.compile(r'PID *: (\d{2,8})')
-    PID = re.findall(criteria, stdout.decode('utf-8'))[0]
-    print("Killing RanchHand service with PID: {}".format(PID))
-    # Kill PID
-    p = psutil.Process( int(PID) )
-    p.kill()
+    try:
+        PID = re.findall(criteria, stdout.decode('utf-8'))[0]
+        print("Killing RanchHand service with PID: {}".format(PID))
+        # Kill PID
+        p = psutil.Process( int(PID) )
+        p.kill()
+    except:
+        print("Process Not Running.")
+        sys.exit(1)
 
 # Define Primary Windows Service Class
 class ConstructorService(win32serviceutil.ServiceFramework):
@@ -113,28 +124,35 @@ class ConstructorService(win32serviceutil.ServiceFramework):
         '''
         ClassMethod to parse the command line
         '''
-        win32serviceutil.HandleCommandLine(cls)
+        sys.frozen = 'windows_exe' # Fake py2exe so we can debug
+        if len(sys.argv) == 1:
+            servicemanager.Initialize()
+            servicemanager.PrepareToHostSingle(cls)
+            servicemanager.StartServiceCtrlDispatcher()
+        else:
+            win32serviceutil.HandleCommandLine(cls)
+        logger.info("attempting to parse...")
 
     def __init__(self, args):
         '''
         Constructor of the winservice
         '''
+        self.logger = logger
+        self.logger.info("attempting to enter __init__...")
         win32serviceutil.ServiceFramework.__init__(self, args)
         self.hWaitStop = win32event.CreateEvent(None, 0, 0, None)
-        socket.setdefaulttimeout(10)
-        log_file_path = dataFolder + "service.log"
-        self.logger = logging.getLogger("RanchHandLogger")
-        self.logger.setLevel(logging.DEBUG)
-        handler = logging.handlers.RotatingFileHandler(log_file_path)
-        self.logger.addHandler(handler)
+        socket.setdefaulttimeout(30)
+        self.logger.info("Entered Class __init__")
 
     def SvcStop(self):
         '''
         Called when the service is asked to stop
         '''
+        self.logger.info("RanchHand Service Run Stop.")
         self.stop()
         self.ReportServiceStatus(win32service.SERVICE_STOP_PENDING)
         kill_proc()
+        sys.exit(1)
         win32event.SetEvent(self.hWaitStop)
 
     def SvcDoRun(self):
@@ -211,6 +229,7 @@ class ConstructorService(win32serviceutil.ServiceFramework):
         '''
         Mark internal attribute to allow start of service
         '''
+        self.logger.info("Internal Start Method.")
         # Read Configuration File
         config = configparser.ConfigParser()
         config.read(configfile)
@@ -277,13 +296,14 @@ class ConstructorService(win32serviceutil.ServiceFramework):
             logger.error("Failed to start!")
             print(e)
         print("Startup Successful.")
-        logger.info("Startup Successfull")
+        self.logger.info("Startup Successfull")
         self.isrunning = True
 
     def stop(self):
         '''
         Mark internal attribute to stop service
         '''
+        self.logger.info("Internal Stop Method.")
         self.kill = True
         self.isrunning = False
         self.local_observer.stop()
@@ -295,6 +315,7 @@ class ConstructorService(win32serviceutil.ServiceFramework):
         Main body method called when started
         '''
         try:
+            self.logger.info("Internal `main` Method.")
             while not self.kill:
                 # Monitor System Tray
                 menu_item = self.tray.read()
@@ -318,9 +339,12 @@ class ConstructorService(win32serviceutil.ServiceFramework):
 
 # Service Routine Entry Point
 if __name__ == '__main__':
+    logger.info("Found entry point")
     if 'kill' in sys.argv:
         kill_proc()
+        logger.info("Killing service")
         sys.exit(0)
+    logger.info("Entering service")
     ConstructorService.parse_command_line()
 
 # END

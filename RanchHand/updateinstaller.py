@@ -8,7 +8,7 @@ By: Joe Stanley
 """
 
 # Capture Version from Service Application
-from RanchHandService import get_version, get_service_info, look_up_state
+from RanchHandService import get_version, get_service_info, look_up_state, kill_proc
 print("Installer Build Version:", get_version())
 
 # Import Required Dependencies
@@ -20,6 +20,7 @@ import time
 import ctypes
 import psutil
 import zipfile
+import requests
 import threading
 import traceback
 import subprocess
@@ -27,7 +28,6 @@ import win32com.client
 import win32serviceutil
 import PySimpleGUI as sg
 from pathlib import Path
-from urllib import request
 from alive_progress import alive_bar
 
 # Define Boolean Control
@@ -137,16 +137,7 @@ def close_and_stop():
                 print("Stopped.")
             except:
                 print("Failed to stop service. Killing Instead.")
-                # Request PID
-                proc = subprocess.Popen('sc queryex {}'.format(servicename),
-                    stdout=subprocess.PIPE,stderr=subprocess.STDOUT,shell=True)
-                stdout,stderr = proc.communicate()
-                # Find PID from STDOUT
-                criteria = re.compile(r'PID *: (\d{2,8})')
-                PID = re.findall(criteria, stdout.decode('utf-8'))[0]
-                # Kill PID
-                p = psutil.Process( int(PID) )
-                p.kill()
+                kill_proc()
 
 # Define Function to Generate Folder Paths
 def build_folders():
@@ -184,9 +175,9 @@ def download_requirement( requirement ):
     localPath, url = requirement
     # Open File from Web for Reading
     if url != 'null':
-        with request.urlopen(url) as remoteObj:
-            with open(localPath, 'wb') as localObj:
-                localObj.write( remoteObj.read() )
+        resp = requests.get( url )
+        with open(localPath, 'wb') as localObj:
+            localObj.write( resp.content )
     else:
         print("(w) Unable to locate remote URL for requirement:",
                 os.path.basename(localPath))
