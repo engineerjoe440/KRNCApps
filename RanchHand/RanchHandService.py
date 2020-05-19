@@ -119,10 +119,10 @@ class ConstructorService(win32serviceutil.ServiceFramework):
     
     tray = sg.SystemTray(menu=menu_def, filename=iconfileneg)
     
-    ignore_created = ''
-    ignore_modified = ''
-    ignore_deleted = ''
-    ignore_moved = ''
+    ignore_created = []
+    ignore_modified = []
+    ignore_deleted = []
+    ignore_moved = []
     
     kill = False
 
@@ -180,13 +180,17 @@ class ConstructorService(win32serviceutil.ServiceFramework):
     # Define Created Method
     def on_created(self, event):
         # Capture Source Path
-        src = event.src_path
-        if src == self.ignore_created:
-            self.ignore_created = ''
+        src = event.src_path.replace('\\','/')
+        if src in self.ignore_created:
             return
+        else:
+            try:
+                self.ignore_created.remove(src)
+            except:
+                pass
         print('New File Created:',src)
         # Identify Destination Path
-        if self.LOCALFOLDER in src.replace('\\','/'):
+        if self.LOCALFOLDER in src:
             dst = src.replace( self.LOCALFOLDER, self.REMOTEFOLDER )
             srcstr = self.LOCALFOLDER
             dststr = vdj.generic_path
@@ -195,7 +199,7 @@ class ConstructorService(win32serviceutil.ServiceFramework):
             srcstr = vdj.generic_path
             dststr = self.LOCALFOLDER
         # Set Ignore Operator
-        self.ignore_created = dst
+        self.ignore_created.append(dst)
         # Perform File Management
         self.logger.info(f'Created: {src}')
         vdj.modify_move_file(
@@ -206,18 +210,22 @@ class ConstructorService(win32serviceutil.ServiceFramework):
     # Define Deleted Method
     def on_deleted(self, event):
         # Capture Source Path
-        src = event.src_path
-        if src == self.ignore_deleted:
-            self.ignore_deleted = ''
+        src = event.src_path.replace('\\','/')
+        if src in self.ignore_deleted:
             return
+        else:
+            try:
+                self.ignore_deleted.remove(src)
+            except:
+                pass
         print('Existing File Deleted:',src)
         # Identify Destination Path
-        if self.LOCALFOLDER in src.replace('\\','/'):
-            dst = src.replace( self.LOCALFOLDER, self.REMOTEFOLDER )
+        if self.LOCALFOLDER in src:
+            return # Don't Delete from One Drive
         else:
             dst = src.replace( self.REMOTEFOLDER, self.LOCALFOLDER )
         # Set Ignore Operator
-        self.ignore_deleted = dst
+        self.ignore_deleted.append(dst)
         # Perform File Management
         self.logger.info(f'Deleted: {src}')
         try:
@@ -229,13 +237,17 @@ class ConstructorService(win32serviceutil.ServiceFramework):
     # Define Modified Method
     def on_modified(self, event):
         # Capture Source Path
-        src = event.src_path
-        if src == self.ignore_modified:
-            self.ignore_modified = ''
+        src = event.src_path.replace('\\','/')
+        if src in self.ignore_modified:
             return
+        else:
+            try:
+                self.ignore_modified.remove(src)
+            except:
+                pass
         print('Existing File Modified:',src)
         # Identify Destination Path
-        if self.LOCALFOLDER in src.replace('\\','/'):
+        if self.LOCALFOLDER in src:
             dst = src.replace( self.LOCALFOLDER, self.REMOTEFOLDER )
             srcstr = self.LOCALFOLDER
             dststr = vdj.generic_path
@@ -244,7 +256,7 @@ class ConstructorService(win32serviceutil.ServiceFramework):
             srcstr = vdj.generic_path
             dststr = self.LOCALFOLDER
         # Set Ignore Operator
-        self.ignore_modified = dst
+        self.ignore_modified.append(dst)
         # Perform File Management
         self.logger.info(f'Modified: {src}')
         vdj.modify_move_file(
@@ -255,16 +267,20 @@ class ConstructorService(win32serviceutil.ServiceFramework):
     # Define Moved Method
     def on_moved(self, event):
         # Capture Source Path
-        src = event.src_path
-        mvdst = event.dest_path
-        if src == self.ignore_moved:
-            self.ignore_moved = ''
+        src = event.src_path.replace('\\','/')
+        mvdst = event.dest_path.replace('\\','/')
+        if src in self.ignore_moved:
             return
+        else:
+            try:
+                self.ignore_moved.remove(src)
+            except:
+                pass
         print('Existing File Moved:',src)
         # Identify Destination Path
-        if self.LOCALFOLDER in src.replace('\\','/'):
+        if self.LOCALFOLDER in src:
             dst = src.replace( self.LOCALFOLDER, self.REMOTEFOLDER )
-            if self.REMOTEFOLDER in mvdst.replace('\\','/'):
+            if self.REMOTEFOLDER in mvdst:
                 print('Moved to Supported Folder.')
             else:
                 print('Moved out of RanchHand Management Scope')
@@ -366,10 +382,8 @@ class ConstructorService(win32serviceutil.ServiceFramework):
         try:
             self.logger.info("Internal `main` Method.")
             while not self.kill:
-                self.logger.info("System Tray")
                 # Monitor System Tray
-                menu_item = self.tray.read(timeout=1000)
-                self.logger.info(menu_item)
+                menu_item = self.tray.read()
                 if menu_item in [None, '__TIMEOUT__']:
                     pass
                 elif menu_item == 'Exit':
