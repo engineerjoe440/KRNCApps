@@ -85,10 +85,17 @@ menu_def = ['BLANK', ['Configuration', 'Exit']]
 # Start Log if Main
 if __name__ == '__main__':
     log_file_path = dataFolder + "service.log"
+    logging.basicConfig(
+        handlers=[logging.handlers.RotatingFileHandler(
+            log_file_path,
+            maxBytes=100000,
+            backupCount=10
+        )],
+        level=logging.INFO,
+        format='%(asctime)s %(levelname)s %(name)s %(message)s'
+    )
     logger = logging.getLogger("RanchHandLogger")
     logger.setLevel(logging.DEBUG)
-    handler = logging.handlers.RotatingFileHandler(log_file_path)
-    logger.addHandler(handler)
     logger.info("RanchHandService")
 
 # Define Kill Process Function
