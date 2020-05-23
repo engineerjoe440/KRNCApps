@@ -37,6 +37,8 @@ def modify_move_file(   srcfpath, dstfpath, srcstring, dststring,
     dstfpath = dstfpath.replace('/','\\')
     srcstring = srcstring.replace('/','\\')
     dststring = dststring.replace('/','\\')
+    mxsrcstring = mxsrcstring.replace('/','\\')
+    mxdststring = mxdststring.replace('/','\\')
     print("Resolving: '{}'  to: '{}'".format(srcfpath, dstfpath))
     print("   - '{}' replaced with '{}' placeholder".format(srcstring, dststring))
     print("   - '{}' replaced with '{}' placeholder".format(mxsrcstring, mxdststring))
