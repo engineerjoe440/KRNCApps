@@ -251,7 +251,10 @@ def app():
                         srcpath = config['RanchHand']['OneDriveSettings'],
                         dstpath = config['RanchHand']['LocalSettings'],
                         srcstring = vdj.generic_path,
-                        dststring = config['RanchHand']['LocalSettings']
+                        mxsrcstring = vdj.generic_mx_path,
+                        dststring = config['RanchHand']['LocalSettings'],
+                        mxdststring = config['RanchHand']['OneDriveMusic'],
+                        window = window,
                     )
                     print("Settings Pull Completed!")
                 except Exception as e:
@@ -268,7 +271,10 @@ def app():
                         srcpath = config['RanchHand']['LocalSettings'],
                         dstpath = config['RanchHand']['OneDriveSettings'],
                         srcstring = config['RanchHand']['LocalSettings'],
-                        dststring = vdj.generic_path
+                        mxsrcstring = config['RanchHand']['OneDriveMusic'],
+                        dststring = vdj.generic_path,
+                        mxdststring = vdj.generic_mx_path,
+                        window = window,
                     )
                     print("Settings Push Completed!")
                 except Exception as e:

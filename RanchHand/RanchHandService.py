@@ -200,11 +200,15 @@ class ConstructorService(win32serviceutil.ServiceFramework):
         if self.LOCALFOLDER in src:
             dst = src.replace( self.LOCALFOLDER, self.REMOTEFOLDER )
             srcstr = self.LOCALFOLDER
+            mxsrc  = self.ONEDRIVEMX
             dststr = vdj.generic_path
+            mxdst  = vdj.generic_mx_path
         else:
             dst = src.replace( self.REMOTEFOLDER, self.LOCALFOLDER )
             srcstr = vdj.generic_path
+            mxsrc  = vdj.generic_mx_path
             dststr = self.LOCALFOLDER
+            mxdst  = self.ONEDRIVEMX
         # Set Ignore Operator
         self.ignore_created.append(dst)
         # Perform File Management
@@ -212,6 +216,7 @@ class ConstructorService(win32serviceutil.ServiceFramework):
         vdj.modify_move_file(
             srcfpath=src, dstfpath=dst,
             srcstring=srcstr, dststring=dststr,
+            mxsrcstring=mxsrc, mxdststring=mxdst,
         )
     
     # Define Deleted Method
@@ -257,11 +262,15 @@ class ConstructorService(win32serviceutil.ServiceFramework):
         if self.LOCALFOLDER in src:
             dst = src.replace( self.LOCALFOLDER, self.REMOTEFOLDER )
             srcstr = self.LOCALFOLDER
+            mxsrc  = self.ONEDRIVEMX
             dststr = vdj.generic_path
+            mxdst  = vdj.generic_mx_path
         else:
             dst = src.replace( self.REMOTEFOLDER, self.LOCALFOLDER )
             srcstr = vdj.generic_path
+            mxsrc  = vdj.generic_mx_path
             dststr = self.LOCALFOLDER
+            mxdst  = self.ONEDRIVEMX
         # Set Ignore Operator
         self.ignore_modified.append(dst)
         # Perform File Management
@@ -269,6 +278,7 @@ class ConstructorService(win32serviceutil.ServiceFramework):
         vdj.modify_move_file(
             srcfpath=src, dstfpath=dst,
             srcstring=srcstr, dststring=dststr,
+            mxsrcstring=mxsrc, mxdststring=mxdst,
         )
     
     # Define Moved Method
