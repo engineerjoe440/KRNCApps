@@ -29,7 +29,7 @@ and as such, the installer will perform the folder construction that is required
   │    └─── StanleySolutions
   │         └─── KRNC
   │              └─── RanchHand
-                      ├── service.log
+  │                   ├── service.log
   │                   └── config.ini
   │
   └─── Program Files (x86)
