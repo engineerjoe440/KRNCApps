@@ -105,8 +105,9 @@ Options for 'start' and 'stop' commands only:
 ```
 
 Download the Installer Now!
+
 <a href="https://github.com/engineerjoe440/KRNCApps/blob/master/RanchHand/dist/updateinstaller.exe?raw=true" download>
-  <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/8b/OOjs_UI_icon_download.svg/1200px-OOjs_UI_icon_download.svg.png" width="100" alt="Download">
+  <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/8b/OOjs_UI_icon_download.svg/1200px-OOjs_UI_icon_download.svg.png" width="50" alt="Download">
 </a>
 
 ---
