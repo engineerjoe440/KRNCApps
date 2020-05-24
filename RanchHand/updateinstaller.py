@@ -119,7 +119,7 @@ def close_and_stop():
     global serviceInstalled
     # Close RanchHand App
     for proc in psutil.process_iter():
-        if 'RanchHand.exe' == proc.name:
+        if 'RanchHand.exe' == proc.name():
             proc.kill() # Kill the Application
     # Stop Ranch Hand Service
     try:

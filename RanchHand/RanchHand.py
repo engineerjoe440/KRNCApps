@@ -142,16 +142,14 @@ def app():
                                 ('Updating now will stopp the application and will'
                                     +' stop any active file synchronization tasks '
                                     +'that are currently active.'),
-                                ('It is reccomended that VirtualDJ be closed during'
+                                ('It is recommended that VirtualDJ be closed during'
                                     +' Ranch Hand updates.'),
                                 title='Confirm Update', icon=icon)
                 if response.lower() != 'yes':
+                    print("Upgrade Aborted")
                     continue
                 # Call Updater in Subproccess
-                if not os.path.exists( updateEXE ):
-                    subprocess.Popen('python .\\updateinstaller.py', shell=True)
-                else:
-                    subprocess.Popen(updateEXE, shell=True)
+                subprocess.Popen(updateEXE, shell=True)
         # Manage Save/Push/Pull Settings from OneDrive
         elif event in ['save', 'pull', 'push']:
             # Validate all Configuration Before Restarting Service
@@ -291,6 +289,6 @@ if __name__ == '__main__':
     except Exception as e:
         print("Exception Occured:", e)
     
-window.close()
+    window.close()
 
 # END

@@ -45,11 +45,11 @@ def modify_move_file(   srcfpath, dstfpath, srcstring, dststring,
     if window != None:
         window.Refresh()
     # Validate Not License (Never Changes)
-    if srcfpath.endswith('license.dat'):
+    if srcfpath.endswith('license.dat') or srcfpath.endswith('.zip'):
         try:
             shutil.copy(srcfpath,dstfpath)
         except:
-            print("Warning - Failure to Move License")
+            print("Warning - Failure to Move License or Zipped File")
             if window != None:
                 window.Refresh()
     # Check for Monitored File Type
