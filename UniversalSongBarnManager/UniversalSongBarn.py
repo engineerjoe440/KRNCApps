@@ -16,19 +16,13 @@ def version():
 
 # Import Required Dependencies
 import os, sys
-import time
-import requests
 import PySimpleGUI as sg
 from tkinter.font import Font
 from PIL import Image, ImageTk
-import lib.requests, zipfile, threading
 from multiprocessing import Pool
 from functools import partial
 from importlib.util import spec_from_loader, module_from_spec
 from importlib.machinery import SourceFileLoader
-import lib.win32com.client as win32com
-from ctypes import windll, WINFUNCTYPE, c_wchar_p, c_int, c_void_p
-from pathlib import Path
 
 
 # Create Local Paths if Nonexistent
@@ -366,106 +360,12 @@ class App(tk.Tk):
         # Set "After" Callback
         self.after(50,self._update)
     
-    def scanDrives(self,firstscan=False):
-        # Find Available Drives and Names
-        strComputer = "." 
-        objWMIService = win32com.Dispatch("WbemScripting.SWbemLocator")
-        objSWbemServices = objWMIService.ConnectServer(strComputer,"root\cimv2")
-        colItems = objSWbemServices.ExecQuery("Select * from Win32_LogicalDisk")
-        # Iteratively Identify Drive Number and Label
-        self.availDrives = {}
-        for objItem in colItems:
-            drvName = objItem.Name
-            volName = objItem.VolumeName
-            drvDesc = objItem.Description
-            # Validate Drive as Potential USB
-            if (drvName != 'C:') and (drvDesc.find('CD') == -1):
-                drvStr = str(drvName) + '  ' + str(volName)
-                self.availDrives[drvStr] = drvName
-                if volName == 'KRNC':
-                    self.driveVal.set(drvStr)
-        if not firstscan:
-            # Re-Load Drive Menu
-            self.drivmenu['menu'].delete(0, 'end')
-            for opt in self.availDrives.keys():
-                self.drivmenu['menu'].add_command(  label=opt,
-                            command=tk._setit(  self.driveVal, opt))
-            # Update Label if Needed
-            if self.driveVal.get() not in self.availDrives.keys():
-                self.driveVal.set("-usb-drive-")
-    
-    def formatDrive(self):
-        # Capture Selected Drive Letter
-        try:
-            curDrive = self.availDrives[ self.driveVal.get() ] + '\\'
-        except:
-            self.scanDrives()
-            return
-        frmt = 'NTFS'
-        name = 'KRNC'
-        # Validate Format Operation
-        permission = tk.messagebox.askquestion("Format Drive",
-                "Formatting will erase all data.\nProceed?",icon='warning',)
-        if permission.lower() == 'yes':
-            # Define Callback Function
-            def fmtCallback(command, modifier, arg):
-                return(1)
-            # Start Format
-            fm = windll.LoadLibrary('fmifs.dll')
-            FMT_CB_FUNC = WINFUNCTYPE(c_int, c_int, c_int, c_void_p)
-            FMIFS_UNKNOWN = 0
-            fm.FormatEx(c_wchar_p(curDrive), FMIFS_UNKNOWN, c_wchar_p(frmt),
-                        c_wchar_p(name), True, c_int(0), FMT_CB_FUNC(fmtCallback))
-        else:
-            self.popupmsg("Drive Format Aborted",button_txt="OK",height=150,width=200)
-        # Re-Scan Drives
-        self.scanDrives()
-        if permission.lower() == 'yes':
-            try:
-                drive = self.availDrives[ self.driveVal.get() ]
-                # Create KRNC Music Folder and Branding (Imaging) Path
-                Path( drive + barnpath ).mkdir(parents=True, exist_ok=True)
-                Path( drive + brndpath ).mkdir(parents=True, exist_ok=True)
-                # Generate USBarn File
-                with open(drive+'/'+drivedsc,'w') as t_file:
-                    headerstring = ','.join([i['heading'] for i in headers])
-                    t_file.write(headerstring+'\n,,\n')
-                # Notify Success
-                self.popupmsg(  "Drive Format Complete",title='KRNC',
-                                button_txt="OK",height=150,width=220)
-            except:
-                pass
-            finally:
-                # Re-Scan One More Time
-                self.scanDrives()
-    
     def gFilt(self,filter):
         # Iteratively Set Filter Column
         for i in range(self.model.getRowCount()):
             self.model.setValueAt(filter,i,1)
         self.table.redraw()
         self.lastRow = -1 # Force Update
-    
-    def update_branding(self):
-        # Use Requests to Download the Imaging
-        resp = requests.get( brandurl )
-        filepath = krncbrandp+'tempBranding.zip'
-        # Start Loading Bar
-        self.loader = LoadingBar(   text="Fetching Files.",
-                                    width=300,
-                                    height=150,
-                                )
-        # Store Zipped File
-        with open(filepath,'wb') as tempZip:
-            tempZip.write(resp.content)
-        # Extract Zipped Content
-        with zipfile.ZipFile(filepath, 'r') as zip_ref:
-            zip_ref.extractall(krncbrandp)
-        # Delete Zipped Folder
-        os.remove(filepath)
-        time.sleep(2)
-        # Kill Loading Bar
-        self.loader.destroy()
     
     def load_drive(self):
         try:
