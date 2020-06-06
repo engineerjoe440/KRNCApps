@@ -42,3 +42,30 @@ krncbrandp = utilpath + 'KRNCbranding/'
 # Define Branding (Imaging) URL
 brandurl = ("https://github.com/engineerjoe440/KRNCApps/blob/master/"+
             "common/branding/KrncBranding.zip?raw=true")
+
+
+# Define Function to Scan for Available Drives
+def scanDrives():
+    # Find Available Drives and Names
+    strComputer = "." 
+    objWMIService = win32com.Dispatch("WbemScripting.SWbemLocator")
+    objSWbemServices = objWMIService.ConnectServer(strComputer,"root\cimv2")
+    colItems = objSWbemServices.ExecQuery("Select * from Win32_LogicalDisk")
+    # Iteratively Identify Drive Number and Label
+    availDrives = {}
+    driveVal = '-usb-drive-'
+    for objItem in colItems:
+        drvName = objItem.Name
+        volName = objItem.VolumeName
+        drvDesc = objItem.Description
+        # Validate Drive as Potential USB
+        if (drvName != 'C:') and (drvDesc.find('CD') == -1):
+            drvStr = str(drvName) + '  ' + str(volName)
+            availDrives[drvStr] = drvName
+            if volName == 'KRNC':
+                driveVal = drvStr
+    return( driveVal, availDrives )
+
+
+
+# END
