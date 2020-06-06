@@ -1,7 +1,7 @@
 """
 #######################################################################################
-Universal Song Barn (USB) Manager - Tkinter App
-(c) Stanley Solutions
+Universal Song Barn (USB) Manager - Tkinter App (powered by PySimpleGUI)
+(c) Stanley Solutions - 2020
 
 By: Joe Stanley
 #######################################################################################
@@ -14,46 +14,13 @@ def version():
     msg += "\nby Stanley Solutions"
     return(msg)
 
-# Generic Defenitions
-bgblue = '#506c91'
-fgblue = 'white'
-bglblue = '#bdc7e5'
-fglblue = 'black'
-bggrey = '#c9cdd9'
-fggrey = '#506c91'
-mainwidth = 1300
-mainheight = 600
-tablwidth = 1000
-tablheight = mainheight - 5
-drivheight = 100
-barnheight = mainheight - drivheight
-headers = [
-    {'heading': 'File Name',        'width': 000,   'type': 'text'},
-    {'heading': 'Audio Filter',     'width': 200,   'type': 'text'},
-    {'heading': 'Pastured',         'width': 150,   'type': 'text'},
-]
-# Evaluate Width of File Name Column
-headers[0]['width'] = tablwidth + 60 - sum([i['width'] for i in headers])
-
-# Define Local Support File Path
-utilpath = "C:/ProgramData/StanleySolutions/KRNC/USBManager/"
-stockpath = "C:/Users/{}/Music/KRNC/USBManager/"
-musicpath = "C:/Users/{}/Music/"
-barnpath = "/KRNC"
-brndpath = "/BRAND"
-drivedsc = "krncdrive.barn"
-filterpath = utilpath + 'Filters/'
-krncbrandp = utilpath + 'KRNCbranding/'
-
-# Define Branding (Imaging) URL
-brandurl =  ("https://github.com/engineerjoe440/KRNCApps/blob/master/"+
-            "common/branding/KrncBranding.zip?raw=true")
-
 # Import Required Dependencies
-import tkinter as tk
+import os, sys
+import time
+import requests
+import PySimpleGUI as sg
 from tkinter.font import Font
-from lib.PIL import Image, ImageTk
-import time, os, sys
+from PIL import Image, ImageTk
 import lib.requests, zipfile, threading
 from multiprocessing import Pool
 from functools import partial
@@ -62,12 +29,9 @@ from importlib.machinery import SourceFileLoader
 import lib.win32com.client as win32com
 from ctypes import windll, WINFUNCTYPE, c_wchar_p, c_int, c_void_p
 from pathlib import Path
-import requests
 
-# Define Image Path
-imagedir = 'images'
 
-# Create Local Paths if Nonexistant
+# Create Local Paths if Nonexistent
 stockpath = stockpath.format(os.getlogin())
 musicpath = musicpath.format(os.getlogin())
 Path(filterpath).mkdir(parents=True, exist_ok=True)
