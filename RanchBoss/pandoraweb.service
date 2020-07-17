@@ -1,0 +1,11 @@
+[Unit]
+Description=Pandora Web Server
+After=multi-user.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /home/pi/pandoraweb/pandoraweb.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,44 @@
+
+# User
+user = engineerjoe440@yahoo.com
+password = lionel2truck
+ 
+# Keybindings
+act_help = ?
+act_songlove = +
+act_songban = -
+act_stationaddmusic = a
+act_stationcreate = c
+act_stationdelete = d
+act_songexplain = e
+act_stationaddbygenre = g
+act_songinfo = i
+act_addshared = j
+act_songmove = m
+act_songnext = n
+act_songpause = p
+act_quit = q
+act_stationrename = r
+act_stationchange = s
+act_songtired = t
+act_upcoming = u
+act_stationselectquickmix = x
+act_voldown = (
+act_volup = )
+ 
+# Misc
+#audio_quality = low
+autostart_station = 285661242907574485
+fifo = /home/pi/.config/pianobar/ctl
+volume = 0
+ 
+# Format strings
+format_nowplaying_song = %t by %a on %l%r%@%s
+format_nowplaying_station = Station: %n
+format_list_song = %i) %a - %t%r
+format_msg_time = TIME: %s
+format_msg_nowplaying = %s
+format_msg_info = %s
+
+#TLS fingerprint
+tls_fingerprint = FC2E6AF49FC63AEDAD1078DC22D1185B809E7534
