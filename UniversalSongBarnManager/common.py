@@ -12,9 +12,17 @@ import os, sys
 import time
 import requests
 from pathlib import Path
-import win32com.client as win32com
 import requests, zipfile, threading
-from ctypes import windll, WINFUNCTYPE, c_wchar_p, c_int, c_void_p
+
+# Attempt Windows/Linux Imports
+try:
+    import win32com.client as win32com
+    from ctypes import windll, WINFUNCTYPE, c_wchar_p, c_int, c_void_p
+    # If Windows, Set Path
+    utilbase = 'C:/ProgramData'
+except:
+    # If Linux, Set Path
+    utilbase = os.path.join(os.path.expanduser('~'), '.config')
 
 # Generic Defenitions
 bgblue = '#506c91'
@@ -38,15 +46,21 @@ headers = [
 headers[0]['width'] = tablwidth + 60 - sum([i['width'] for i in headers])
 
 # Define Local Support File Path
-utilpath   = "C:/ProgramData/StanleySolutions/KRNC/USBManager/"
-stockpath  = "C:/Users/{}/Music/KRNC/USBManager/"
-musicpath  = "C:/Users/{}/Music/"
+userpath   = os.path.expanduser('~')
+utilpath   = os.path.join(utilbase, "StanleySolutions/KRNC/USBManager/")
+stockpath  = os.path.join(userpath, "Music/KRNC/USBManager/")
+musicpath  = os.path.join(userpath, "Music/")
 barnpath   = "/KRNC"
 brndpath   = "/BRAND"
 imagedir   = 'images'
 drivedsc   = "krncdrive.barn"
 filterpath = os.path.join(utilpath, 'Filters/')
 krncbrandp = os.path.join(utilpath, 'KRNCbranding/')
+
+# Create Local Paths if Nonexistent
+Path(filterpath).mkdir(parents=True, exist_ok=True)
+Path(krncbrandp).mkdir(parents=True, exist_ok=True)
+Path(stockpath).mkdir(parents=True, exist_ok=True)
 
 # Define Branding (Imaging) URL
 brandurl = ("https://github.com/engineerjoe440/KRNCApps/blob/master/"+

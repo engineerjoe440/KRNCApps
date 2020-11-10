@@ -7,12 +7,8 @@ By: Joe Stanley
 #######################################################################################
 """
 
-# Define Version Information
-__version__ = 0.1
-def version():
-    msg  = "UniversalSongBarn Manager Version: {}".format(__version__)
-    msg += "\nby Stanley Solutions"
-    return(msg)
+# Collect Version
+from __main__ import __version__
 
 # Import Required Dependencies
 import os, sys
