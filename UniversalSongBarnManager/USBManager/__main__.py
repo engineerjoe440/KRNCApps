@@ -7,8 +7,11 @@ By: Joe Stanley
 #######################################################################################
 """
 
-# Define Version Information
-__version__ = 0.0
+# Collect Version
+try:
+    from .__init__ import __version__
+except ImportError:
+    from __init__ import __version__
 
 # Import Required Dependencies
 import os, sys
@@ -20,17 +23,13 @@ from functools import partial
 from importlib.util import spec_from_loader, module_from_spec
 from importlib.machinery import SourceFileLoader
 
-
-# Create Local Paths if Nonexistent
-stockpath = stockpath.format(os.getlogin())
-musicpath = musicpath.format(os.getlogin())
-Path(filterpath).mkdir(parents=True, exist_ok=True)
-Path(krncbrandp).mkdir(parents=True, exist_ok=True)
-Path(stockpath).mkdir(parents=True, exist_ok=True)
-
-# Import Common Requirements
-from lib.tkinterroutines import Splash, LoadingBar, BlockLoadingBar, TableDialog
-from lib.tkintertable import TableCanvas, TableModel
+# Local Imports
+try:
+    from . import app
+    from .common import *
+except ImportError:
+    import app
+    from common import *
 
 # Identify Argument
 barnfile = None
@@ -114,6 +113,7 @@ def pasture_zipper(driveName,zip_files,uzip_files):
     except:
         pass
 
+"""
 class App(tk.Tk):
     def __init__(self):
         # Initialize App, then Withdraw while loading
@@ -677,13 +677,10 @@ class App(tk.Tk):
         # Run Main Loop
         self.after(50,self._update)
         self.mainloop()
+"""
 
 if __name__ == "__main__":
-    mainApp = App()
     # Barn Description File was Found
     if barnfile != None:
         mainApp.open_barn(barnfile)
-    mainApp.set_about_callback(version)
-    time.sleep(3)
-    mainApp.run()
 # END

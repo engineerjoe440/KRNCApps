@@ -18,11 +18,13 @@ import requests, zipfile, threading
 try:
     import win32com.client as win32com
     from ctypes import windll, WINFUNCTYPE, c_wchar_p, c_int, c_void_p
+    __platform__ = 'WINDOWS'
     # If Windows, Set Path
     utilbase = 'C:/ProgramData'
 except:
     # If Linux, Set Path
     utilbase = os.path.join(os.path.expanduser('~'), '.config')
+    __platform__ = 'LINUX'
 
 # Generic Defenitions
 bgblue = '#506c91'
@@ -44,6 +46,22 @@ headers = [
 ]
 # Evaluate Width of File Name Column
 headers[0]['width'] = tablwidth + 60 - sum([i['width'] for i in headers])
+
+# Define OS Type Lookup
+def os_platform(check_win=False, check_lin=False):
+    """ Check for the operating platform """
+    if check_lin and check_win:
+        raise ValueError("Inputs are exclusive; choose one, not both.")
+    if check_win and __platform__ == 'WINDOWS':
+        return True
+    elif check_win:
+        return False # Not Running Windows
+    elif check_lin and __platform__ == 'LINUX':
+        return True
+    elif check_lin:
+        return False
+    else:
+        return __platform__
 
 # Define Local Support File Path
 userpath   = os.path.expanduser('~')

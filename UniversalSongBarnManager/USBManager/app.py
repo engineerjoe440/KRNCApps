@@ -8,7 +8,10 @@ By: Joe Stanley
 """
 
 # Collect Version
-from __main__ import __version__
+try:
+    from .__init__ import __version__
+except ImportError:
+    from __init__ import __version__
 
 # Import Required Dependencies
 import os, sys
@@ -16,6 +19,7 @@ import PySimpleGUI as sg
 from tkinter.font import Font
 from PIL import Image, ImageTk
 
+"""
 class App(tk.Tk):
     def __init__(self):
         # Initialize App, then Withdraw while loading
@@ -579,13 +583,7 @@ class App(tk.Tk):
         # Run Main Loop
         self.after(50,self._update)
         self.mainloop()
+"""
 
-if __name__ == "__main__":
-    mainApp = App()
-    # Barn Description File was Found
-    if barnfile != None:
-        mainApp.open_barn(barnfile)
-    mainApp.set_about_callback(version)
-    time.sleep(3)
-    mainApp.run()
+
 # END
