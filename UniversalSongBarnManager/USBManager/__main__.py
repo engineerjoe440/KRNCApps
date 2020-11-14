@@ -679,8 +679,40 @@ class App(tk.Tk):
         self.mainloop()
 """
 
+class application():
+    def __init__(self):
+        # Throw Splash Screen
+        splash = app.SplashScreen()
+        time.sleep(5)
+        # Prepare Window and Defaults
+        self.window = sg.Window(windowTitle, layout=app.window_layout,
+            size=app.eval_app_size(splash.window_size()) )
+        splash.close()
+        self.event = None
+        self.values = None
+    
+    def open_barn(self):
+        pass
+
+    def close_barn(self):
+        pass
+
+    def save_barn(self):
+        pass
+    
+    def run(self):
+        self.event, self.values = self.window.read()
+
+    def close(self):
+        self.window.close()
+
 if __name__ == "__main__":
+    # Create Application
+    guiApp = application()
     # Barn Description File was Found
     if barnfile != None:
-        mainApp.open_barn(barnfile)
+        guiApp.open_barn(barnfile)
+    sta = guiApp.run()
+    while sta:
+        sta = guiApp.run()
 # END
