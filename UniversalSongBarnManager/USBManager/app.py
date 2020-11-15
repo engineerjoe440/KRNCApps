@@ -11,11 +11,11 @@ By: Joe Stanley
 try:
     from .__init__ import __version__
     from .common import *
-    from .images import krnc_splash_b64
+    from .images import krnc_splash_b64, icon_b, icon_w
 except ImportError:
     from __init__ import __version__
     from common import *
-    from images import krnc_splash_b64
+    from images import krnc_splash_b64, icon_b, icon_w
 
 # Import Required Dependencies
 import os, sys
@@ -65,10 +65,20 @@ menubar_layout = [
     ['Help', ['View Web Docs']]
 ]
 
+# Define Table Column
+table_layout = [
+    [sg.Table([['', '', '']], headings=['File', 'Filter', 'Pastured'],)]
+]
+
+# Define Controls
+control_layout = [
+    [sg.Text('something')]
+]
+
 # Define Primary Window Layout
 window_layout = [
     [sg.MenuBar(menubar_layout)],
-    [sg.Text('something goes here')]
+    [sg.Column(table_layout), sg.Column(control_layout)]
 ]
 
 # END

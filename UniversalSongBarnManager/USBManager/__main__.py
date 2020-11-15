@@ -683,10 +683,11 @@ class application():
     def __init__(self):
         # Throw Splash Screen
         splash = app.SplashScreen()
-        time.sleep(5)
+        time.sleep(3)
         # Prepare Window and Defaults
         self.window = sg.Window(windowTitle, layout=app.window_layout,
-            size=app.eval_app_size(splash.window_size()) )
+            size=app.eval_app_size(splash.window_size()), resizable=True,
+            icon=app.icon_w)
         splash.close()
         self.event = None
         self.values = None
