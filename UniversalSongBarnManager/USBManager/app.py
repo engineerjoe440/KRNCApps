@@ -67,7 +67,9 @@ menubar_layout = [
 
 # Define Table Column
 table_layout = [
-    [sg.Table([['', '', '']], headings=['File', 'Filter', 'Pastured'],)]
+    [sg.Table([['', '', '']], headings=['File', 'Filter', 'Pastured'],
+        size=(tablwidth,tablheight), col_widths=[col1width, col2width, col3width],
+        auto_size_columns=False, header_font=table_head_font)]
 ]
 
 # Define Controls

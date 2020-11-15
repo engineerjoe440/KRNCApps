@@ -40,19 +40,19 @@ fglblue = 'black'
 bggrey = '#c9cdd9'
 fggrey = '#506c91'
 mainwidth = 80 # % of screen
-mainheight = 80 # % of screen
-tablwidth = 1000
-tablheight = mainheight - 5
+mainheight = 70 # % of screen
+col1width  = 55
+col2width  = 20
+col3width  = 15
+tablwidth  = 1000
+tablheight = 40
 drivheight = 100
-barnheight = mainheight - drivheight
-headers = [
-    {'heading': 'File Name',        'width': 000,   'type': 'text'},
-    {'heading': 'Audio Filter',     'width': 200,   'type': 'text'},
-    {'heading': 'Pastured',         'width': 150,   'type': 'text'},
-]
-# Evaluate Width of File Name Column
-headers[0]['width'] = tablwidth + 60 - sum([i['width'] for i in headers])
 
+# Define Fonts
+table_head_font = ('Helvetica', 12)
+table_body_font = ('Helvetica', 10)
+
+# Define Standard Text Messages
 splashText  = 'Welcome Home.'
 windowTitle = 'Universal Song Barn Manager - "Your Music Lives Here"'
 
