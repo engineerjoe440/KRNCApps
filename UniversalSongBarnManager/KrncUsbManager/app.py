@@ -10,13 +10,21 @@ By: Joe Stanley
 # Collect Version
 from KrncUsbManager import __version__
 from KrncUsbManager.common import *
-from KrncUsbManager.images import krnc_splash_b64, icon_b, icon_w
+from KrncUsbManager.images import krnc_splash_b64
+from KrncUsbManager.images import icon_b_ico, icon_b_png
+from KrncUsbManager.images import icon_w_ico, icon_w_png
 
 # Import Required Dependencies
 import os, sys
 import PySimpleGUI as sg
 from tkinter.font import Font
 from PIL import Image, ImageTk
+
+# Set App Icon for Different OS
+if os_platform(check_win=True):
+    app_icon = icon_w_ico # Windows
+else:
+    app_icon = icon_w_png # Linux
 
 # Define Splash Screen
 class SplashScreen():

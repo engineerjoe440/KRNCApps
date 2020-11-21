@@ -684,7 +684,7 @@ class application():
         # Prepare Window and Defaults
         self.window = sg.Window(windowTitle, layout=app.window_layout,
             size=app.eval_app_size(splash.window_size()), resizable=True,
-            icon=app.icon_w)
+            icon=app.app_icon)
         splash.close()
         self.event = None
         self.values = None
