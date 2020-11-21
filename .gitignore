@@ -6,3 +6,5 @@
 *.pkg
 *.pyz
 __pycache__/
+
+*.egg-info/

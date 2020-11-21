@@ -8,14 +8,9 @@ By: Joe Stanley
 """
 
 # Collect Version
-try:
-    from .__init__ import __version__
-    from .common import *
-    from .images import krnc_splash_b64, icon_b, icon_w
-except ImportError:
-    from __init__ import __version__
-    from common import *
-    from images import krnc_splash_b64, icon_b, icon_w
+from KrncUsbManager import __version__
+from KrncUsbManager.common import *
+from KrncUsbManager.images import krnc_splash_b64, icon_b, icon_w
 
 # Import Required Dependencies
 import os, sys

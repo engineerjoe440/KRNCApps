@@ -8,10 +8,7 @@ By: Joe Stanley
 """
 
 # Collect Version
-try:
-    from .__init__ import __version__
-except ImportError:
-    from __init__ import __version__
+from KrncUsbManager import __version__
 
 # Import Required Dependencies
 import os, sys
@@ -707,7 +704,8 @@ class application():
     def close(self):
         self.window.close()
 
-if __name__ == "__main__":
+def main():
+    # Main Function Entry Point
     # Create Application
     guiApp = application()
     # Barn Description File was Found
@@ -716,4 +714,10 @@ if __name__ == "__main__":
     sta = guiApp.run()
     while sta:
         sta = guiApp.run()
+
+if __name__ == "__main__":
+    print(__file__)
+    main()
+
+
 # END

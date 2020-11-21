@@ -16,18 +16,12 @@ import requests, zipfile, threading
 
 # Attempt Windows/Linux Imports
 try:
-    try:
-        from .windowsutil import *
-    except ImportError:
-        from windowsutil import *
+    from KrncUsbManager.windowsutil import *
     __platform__ = 'WINDOWS'
     # If Windows, Set Path
     utilbase = 'C:/ProgramData'
 except ImportError:
-    try:
-        from .linuxutil import *
-    except ImportError:
-        from linuxutil import *
+    from KrncUsbManager.linuxutil import *
     # If Linux, Set Path
     utilbase = os.path.join(os.path.expanduser('~'), '.config')
     __platform__ = 'LINUX'
