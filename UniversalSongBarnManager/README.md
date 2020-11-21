@@ -10,6 +10,20 @@ should be loaded onto a USB flash drive for playback in vehicle sound systems. S
 drives can easily be managed with this tool to update and change the available
 playlist.
 
+Originally intended to function solely as a Windows application, this design is now
+intended to be cross-platform-compatible between Windows and Linux environments where
+TK graphics are supported. Eventually, with luck this app will be released into
+Linux package managers/software stores and on PyPI for direct source installation.
+Right now, the app can only be installed by way of cloning this repository.
+
+### Development Installation:
+- clone repository to a desired location (e.g., (`C:`)`/<my-folder-path>/usbmanager`)
+- `cd` to the new directory (e.g., `cd <my-folder-path>/usbmanager`)
+- use *pip* to install:
+  - on Windows: `> pip install .`
+  - on Linux: `$ pip3 install .` *this is because Python2 is not supported*
+- run the app! `KrncUsbManager`
+
 ---
 
 *KRNC - Welcome Home.*

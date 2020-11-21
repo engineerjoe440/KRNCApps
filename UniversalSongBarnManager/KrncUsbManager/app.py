@@ -57,7 +57,7 @@ menubar_layout = [
     ['File', ['&Save Barn', '&Open Barn', 'Close Barn', '&New Barn', '---',
         'Saddle Bag', ['Choose Bag', 'Remove Bag'], '---', '&Quit']],
     ['View', ['Theme', [sg.theme_list()]]],
-    ['Help', ['View Web Docs']]
+    ['Help', ['View Web Docs', 'View License Information']]
 ]
 
 # Define Table Column

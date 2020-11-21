@@ -26,5 +26,8 @@ setuptools.setup(
     ],
     project_urls={
         "Source Repository": "https://github.com/engineerjoe440/KRNCApps",
-        }
+    },
+    entry_points = {
+        'console_scripts': ['KrncUsbManager=KrncUsbManager.__main__:main'],
+    }
 )
