@@ -14,6 +14,9 @@ import requests
 from pathlib import Path
 import requests, zipfile, threading
 
+# Filter imports
+from KrncUsbManager.filters import filter_lookup as available_filters
+
 # Attempt Windows/Linux Imports
 try:
     from KrncUsbManager.windowsutil import *
@@ -40,6 +43,8 @@ col2width  = 20
 col3width  = 15
 tablwidth  = 1000
 tablheight = 40
+cntlwidth  = 200
+cntl_obj_height = 15
 drivheight = 100
 
 # Define Fonts
@@ -48,7 +53,7 @@ table_body_font = ('Helvetica', 10)
 
 # Define Standard Text Messages
 splashText  = 'Welcome Home.'
-windowTitle = 'Universal Song Barn Manager - "Your Music Lives Here"'
+windowTitle = 'Universal Song Barn Manager - Your Music Lives Here'
 
 # Define OS Type Lookup
 def os_platform(check_win=False, check_lin=False):

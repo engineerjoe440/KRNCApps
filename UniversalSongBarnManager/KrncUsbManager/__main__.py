@@ -21,12 +21,8 @@ from importlib.util import spec_from_loader, module_from_spec
 from importlib.machinery import SourceFileLoader
 
 # Local Imports
-try:
-    from . import app
-    from .common import *
-except ImportError:
-    import app
-    from common import *
+from KrncUsbManager import app
+from KrncUsbManager.common import *
 
 # Identify Argument
 barnfile = None
@@ -699,10 +695,26 @@ class application():
         pass
     
     def run(self):
+        # Read/Run Window
         self.event, self.values = self.window.read()
+        print(self.event, self.values)
+        # Quit When Needed
+        if self.event == 'Quit':
+            self.close()
+        # Detect Closed Window
+        elif self.event == None:
+            sys.exit(0) # Close gracefully
+        else:
+            self.run() # Continue Running
 
     def close(self):
+        # Verify Quit if user has selected 'Quit' from menu
+        confirm = sg.popup_yes_no('Are you sure you want to quit?',
+            title='Quit?', icon=app.app_icon)
+        if confirm.lower() == 'no':
+            self.run() # Cancel Close Operation
         self.window.close()
+        sys.exit(0)
 
 def main():
     # Main Function Entry Point
@@ -716,7 +728,6 @@ def main():
         sta = guiApp.run()
 
 if __name__ == "__main__":
-    print(__file__)
     main()
 
 

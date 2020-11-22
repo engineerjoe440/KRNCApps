@@ -22,13 +22,16 @@ from PIL import Image, ImageTk
 
 # Set App Icon for Different OS
 if os_platform(check_win=True):
-    app_icon = icon_w_ico # Windows
+    app_icon = icon_b_ico # Windows - Default Light
 else:
     app_icon = icon_w_png # Linux
 
+# Define Common Font References
+cntl_head_font = ('Bold', 12)
+
 # Define Splash Screen
 class SplashScreen():
-    def __init__(self, w=250, h=200):
+    def __init__(self, w=275, h=225):
         # Define Layout to be an Image Over Text
         splash_layout = [[
             sg.Column([
@@ -36,7 +39,7 @@ class SplashScreen():
                 [sg.Column([
                 [
                     sg.Text(''),
-                    sg.Text(splashText,text_color='white', justification='center'),
+                    sg.Text(splashText, text_color='white', justification='center'),
                     sg.Text('')
                 ]
                 ], justification='center')]
@@ -77,7 +80,19 @@ table_layout = [
 
 # Define Controls
 control_layout = [
-    [sg.Text('something')]
+    [sg.Text('Filter Selection:', font=cntl_head_font)],
+    [sg.Combo(list(available_filters.keys()), size=(cntlwidth, cntl_obj_height),
+        readonly=True, key='-filter-select-')],
+
+    [sg.Text('')],
+    [sg.Checkbox(' Pastured File', font=cntl_head_font)],
+
+    [sg.Text('\n' + '_'*30 + '\n')], # Horizontal Rule
+
+    [sg.Button('Load Drive',size=(cntlwidth, cntl_obj_height // 7),
+        font=('Bold', 14), key='-load-drive-')],
+    [sg.ProgressBar(100, size=(cntlwidth, cntl_obj_height), visible=False, key='-progress-')],
+    [sg.Text('', key='-status-text-')]
 ]
 
 # Define Primary Window Layout
