@@ -1,0 +1,12 @@
+# vbanstereorx.service
+# VBAN Receptor Stereo Service
+
+[Unit]
+Description= VBAN Stereo Receptor
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/vban_receptor  -i 192.168.2.136 -p 6980 -s StereoPi -d front -q 0
+
+[Install]
+WantedBy=multi-user.target
