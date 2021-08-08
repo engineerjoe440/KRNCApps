@@ -52,14 +52,14 @@ brandurl =  ("https://github.com/engineerjoe440/KRNCApps/blob/master/"+
 # Import Required Dependencies
 import tkinter as tk
 from tkinter.font import Font
-from lib.PIL import Image, ImageTk
+from PIL import Image, ImageTk
 import time, os, sys
-import lib.requests, zipfile, threading
+import requests, zipfile, threading
 from multiprocessing import Pool
 from functools import partial
 from importlib.util import spec_from_loader, module_from_spec
 from importlib.machinery import SourceFileLoader
-import lib.win32com.client as win32com
+import win32com.client as win32com
 from ctypes import windll, WINFUNCTYPE, c_wchar_p, c_int, c_void_p
 from pathlib import Path
 import requests
@@ -75,8 +75,8 @@ Path(krncbrandp).mkdir(parents=True, exist_ok=True)
 Path(stockpath).mkdir(parents=True, exist_ok=True)
 
 # Import Common Requirements
-from lib.tkinterroutines import Splash, LoadingBar, BlockLoadingBar, TableDialog
-from lib.tkintertable import TableCanvas, TableModel
+from tkinterroutines import Splash, LoadingBar, BlockLoadingBar, TableDialog
+from tkintertable import TableCanvas, TableModel
 
 # Identify Argument
 barnfile = None
@@ -92,7 +92,7 @@ def load_filter_driver(name,path=filterpath):
     # Load Module
     if not name.endswith('.filt'):
         name += '.filt'
-    spec = spec_from_loader(name, SourceFileLoader(name, path+name))
+    spec = spec_from_loader(name, SourceFileLoader(name, os.path.join(path, name)))
     mod = module_from_spec(spec)
     spec.loader.exec_module(mod)
     # Return Module Handle
@@ -201,6 +201,15 @@ class App(tk.Tk):
                 handle = load_filter_driver(file)
                 # Generate Look-Up-Dictionary
                 self.audiofilters[file[:-5]] = handle
+        # Handle Null Case
+        if len(self.audiofilters) == 0:
+            filtPath = os.path.join(os.getcwd(), 'Filters')
+            for file in os.listdir(filtPath):
+                if file.endswith('.filt'):
+                    # Import Module and Manage Handle
+                    handle = load_filter_driver(file, path=filtPath)
+                    # Generate Look-Up-Dictionary
+                    self.audiofilters[file[:-5]] = handle
         # Find Available Drives Ignoring C: and any CD-ROM Drives
         self.scanDrives(firstscan=True)
 

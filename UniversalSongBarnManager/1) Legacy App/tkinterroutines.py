@@ -13,7 +13,7 @@ import tkinter.ttk as ttk
 from PIL import Image, ImageTk
 import time, os, sys
 import threading
-from .tkintertable import TableCanvas, TableModel
+from tkintertable import TableCanvas, TableModel
 
 # Define Generic Parent-Directory File Retrieval System; EX: `uppath(__file__, 2)`
 uppath = lambda _path, n: os.sep.join(_path.split(os.sep)[:-n])
