@@ -24,6 +24,11 @@ Right now, the app can only be installed by way of cloning this repository.
   - on Linux: `$ pip3 install .` *this is because Python2 is not supported*
 - run the app! `KrncUsbManager`
 
+### Standard Compressor:
+According to an interesting article [here](https://medium.com/@jud.dagnall/dynamic-range-compression-for-audio-with-ffmpeg-and-compand-621fe2b1a892)
+it seems that the following ffmpeg command may work nicely!
+`ffmpeg -i in.mp3 -filter_complex "compand=attacks=0:points=-80/-900|-45/-15|-27/-9|0/-7|20/-7:gain=5" out.mp3`
+
 ---
 
 *KRNC - Welcome Home.*
