@@ -16,7 +16,11 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/engineerjoe440/KRNCApps/tree/master/UniversalSongBarnManager",
     packages=setuptools.find_packages(),
-    package_data={'': ['images/*.png', 'images/*.ico']},
+    package_data={
+        '': ['images/*.png', 'images/*.ico'],
+        'KrncUsbManager': ['lib/app-windows/*'],
+    },
+    zip_safe=False,
     include_package_data=True,
     classifiers=[
         "Programming Language :: Python :: 3",
