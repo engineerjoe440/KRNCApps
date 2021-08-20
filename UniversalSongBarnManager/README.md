@@ -27,7 +27,15 @@ Right now, the app can only be installed by way of cloning this repository.
 ### Standard Compressor:
 According to an interesting article [here](https://medium.com/@jud.dagnall/dynamic-range-compression-for-audio-with-ffmpeg-and-compand-621fe2b1a892)
 it seems that the following ffmpeg command may work nicely!
+
 `ffmpeg -i in.mp3 -filter_complex "compand=attacks=0:points=-80/-900|-45/-15|-27/-9|0/-7|20/-7:gain=5" out.mp3`
+
+Other resources [here](https://superuser.com/questions/1303036/adjusting-audio-with-varying-loudness-recorded-talks-with-ffmpeg)
+demonstrate some other useful filtering options:
+
+* `ffmpeg -i input.wav -filter:a "dynaudnorm" output.wav`
+* Light compand: `ffmpeg -i input.wav -filter:a "compand=.3|.3:1|1:-90/-60|-60/-40|-40/-30|-20/-20:6:0:-90:0.2" output.wav`
+* Heavy compand: `ffmpeg -i input.wav -filter:a "compand=0|0:1|1:-90/-900|-70/-70|-30/-9|0/-3:6:0:0:0" output.wav`
 
 ---
 
