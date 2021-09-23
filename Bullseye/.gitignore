@@ -7,3 +7,5 @@ Playlists/*.txt
 
 # Ignore PyCache
 __pycache__/
+
+.cache

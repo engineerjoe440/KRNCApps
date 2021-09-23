@@ -4,7 +4,7 @@ from tkinter import *
 from tkinter.font import Font
 from tkinter import filedialog
 import spotipy
-import spotipy.oauth2 as oauth2
+from spotipy.oauth2 import SpotifyClientCredentials
 from tabulate import tabulate
 # Import Developer ID and SECRET
 from local_spotify_dev_account import *
@@ -23,7 +23,7 @@ def browse_button():
 
 # Function to Extract Playlist URI from URL
 def gather_playlist_uri(playlist_url):
-    result = re.search('playlist/(.*)\?si=', playlist_url)
+    result = re.search('playlist/(.*)\?', playlist_url)
     try:
         playlist_uri = result.group(1)
     except:
@@ -31,17 +31,16 @@ def gather_playlist_uri(playlist_url):
     return(playlist_uri)
 
 # Function to Generate Spotify API Token
-def generate_token():
+spotify = None
+def get_spotify():
     """ Generate the token. Please respect these credentials :) """
-    credentials = oauth2.SpotifyClientCredentials(
-        client_id=joestanid,
-        client_secret=joestansecret)
-    token = credentials.get_access_token()
-    return token
-
-# Initialize Token and Spotify
-token = generate_token()
-spotify = spotipy.Spotify(auth=token)
+    global spotify
+    spotify = spotipy.Spotify(client_credentials_manager=SpotifyClientCredentials(
+        joestanid,
+        joestansecret,
+    ))
+    return spotify
+get_spotify()
 
 # Function to Store Playlist Information in Text File
 def write_tracks(text_file, tracks):
@@ -104,8 +103,7 @@ def write_playlist(playlist_id):
 def generate():
     # Generate Token and Authenticate Spotify API Access
     global token, spotify
-    token = generate_token()
-    spotify = spotipy.Spotify(auth=token)
+    spotify = get_spotify()
     # Gather User-Specified URL
     url = urlvar.get()
     if url == '':
