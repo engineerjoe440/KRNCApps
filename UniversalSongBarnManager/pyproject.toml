@@ -3,13 +3,13 @@ name = 'KrncUsbManager'
 author = "Joe Stanley"
 description = "KRNC Universal Song Barn (USB) Manager"
 version = "0.0.0"
-readme = README.md
+readme = "README.md"
 python = "^3.8"
 classifiers = [
   "Programming Language :: Python :: 3",
   "License :: OSI Approved :: MIT License",
   "Operating System :: Windows",
-  "Operating System :: Linux",
+  "Operating System :: Linux"
 ]
 
 [project.urls]
